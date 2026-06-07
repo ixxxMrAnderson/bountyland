@@ -184,40 +184,53 @@
 ### 5.2 架构图
 ```mermaid
 flowchart LR
-    C[Project Owner] --> FE[Frontend]
-    FE --> BE[Backend Orchestrator]
-    C -->|deposit| SC[RewardPool Contract]
+    %% 节点定义与样式
+    C[Project Owner]
+    FE[Frontend]
+    BE[Backend Orchestrator]
+    SC[RewardPool Contract]
+    V[Validators]
+    AI[AI Audit Reference]
+    SE[Scoring & Weighting Engine]
 
-    %% 任务下发
-    BE --> A1[Agent A: Static Analyzer]
-    BE --> A2[Agent B: LLM Auditor]
-    BE --> A3[Agent C: Human Expert]
-    BE --> AN[Agent N]
+    subgraph AG [Agents 审计节点群]
+        A1[Agent A: Static Analyzer]
+        A2[Agent B: LLM Auditor]
+        A3[Agent C: Human Expert]
+        AN[Agent N]
+    end
 
-    %% 结果返回
-    A1 -.-> BE
-    A2 -.-> BE
-    A3 -.-> BE
-    AN -.-> BE
+    %% 核心业务核心流
+    C -->|1. 任务请求| FE
+    FE -->|2. 调度执行| BE
+    C -.->|充值资金| SC
 
-    %% 多方评估
-    BE --> V[Validators]
-    BE --> AI[AI Audit Reference]
+    %% 任务分发与提交
+    BE ==>|3. 分发任务| AG
+    AG ==>|4. 提交 Outputs| BE
 
-    %% 权重清算
-    V --> SE[Scoring & Weighting Engine]
-    AI --> SE
-    BE --> SE
+    %% 评估与权重计算
+    BE -->|5. 触发评估| V
+    BE -->|5. 请求基准| AI
     
-    %% 资金结算
-    SE --> SC
-    SC -->|distribute| A1
-    SC -->|distribute| A2
-    SC -->|distribute| A3
-    SC -->|distribute| AN
+    V -->|评分| SE
+    AI -->|参考分| SE
+    BE -->|控制指令| SE
+
+    %% 结算与分发
+    SE -->|6. Settlement| SC
+    SC -.->|7. 比例分发 reward| AG
     
-    %% 状态更新
-    SE --> FE
+    %% 前端反馈
+    SE -->|8. 更新看板| FE
+
+    %% 样式美化（GitHub 亮暗主题自适应）
+    classDef highlight fill:#eff6ff,stroke:#2563eb,stroke-width:2px;
+    classDef contract fill:#fef2f2,stroke:#dc2626,stroke-width:2px;
+    class BE,SE highlight;
+    class SC contract;
+```
+
 ```
 
 
