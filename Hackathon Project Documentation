@@ -213,23 +213,225 @@ flowchart LR
     SE --> FE
 
 ### 5.3 关键流程 (Sequence)
-sequenceDiagram
-    participant C as Project Owner
-    participant FE as Frontend
-    participant BE as Backend
-    participant A as Agents
-    participant V as Validators
-    participant AI as AI Audit
-    participant SC as RewardPool
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 审计业务流程图</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #1e293b;
+        }
 
-    C->>FE: 提交审计任务 + 设置 reward
-    C->>SC: 充值到 escrow
-    BE->>A: 分发任务
-    A->>BE: 提交 output (URI + hash)
-    BE->>V: 评估 outputs
-    V->>BE: 提交 score
-    BE->>AI: 请求 reference score
-    AI->>BE: 返回 AI score
-    BE->>SC: 提交最终 settlement 指令
-    SC->>A: 按比例分发 reward
-    BE->>FE: 更新 leaderboard
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .flow-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            text-align: center;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 22px;
+        }
+
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .step-card {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .step-card:hover {
+            transform: translateX(4px);
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+        }
+
+        .step-num {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex-grow: 1;
+        }
+
+        .step-route {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .step-desc {
+            font-size: 15px;
+            color: #334155;
+            margin: 0;
+        }
+
+        /* 角色高亮标签 */
+        .role {
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div class="flow-container">
+    <h2>AI 审计去中心化结算流程</h2>
+    
+    <div class="flow-steps">
+        <!-- 步骤 1 -->
+        <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Project Owner</span> → <span class="role">Frontend</span></div>
+                <p class="step-desc">提交审计任务并设置 reward 奖励金额。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 2 -->
+        <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Project Owner</span> → <span class="role">RewardPool</span></div>
+                <p class="step-desc">将资金充值到链上托管账户 (Escrow)。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 3 -->
+        <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Backend</span> → <span class="role">Agents</span></div>
+                <p class="step-desc">后端服务向下属的多个 Agents 节点分发审计任务。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 4 -->
+        <div class="step-card">
+            <div class="step-num">4</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Agents</span> → <span class="role">Backend</span></div>
+                <p class="step-desc">Agents 完成工作，提交输出结果的存储路径 (URI) 与哈希值 (Hash)。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 5 -->
+        <div class="step-card">
+            <div class="step-num">5</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Backend</span> → <span class="role">Validators</span></div>
+                <p class="step-desc">后端将任务输出分发给多方 Validators 进行结果评估。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 6 -->
+        <div class="step-card">
+            <div class="step-num">6</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Validators</span> → <span class="role">Backend</span></div>
+                <p class="step-desc">Validators 向后端提交对该任务结果的评分 (Score)。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 7 -->
+        <div class="step-card">
+            <div class="step-num">7</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Backend</span> → <span class="role">AI Audit</span></div>
+                <p class="step-desc">后端向 AI Audit 系统请求引入 AI 参考评分机制。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 8 -->
+        <div class="step-card">
+            <div class="step-num">8</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">AI Audit</span> → <span class="role">Backend</span></div>
+                <p class="step-desc">AI Audit 系统计算完成，返回最终的 AI 基准评分。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 9 -->
+        <div class="step-card">
+            <div class="step-num">9</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Backend</span> → <span class="role">RewardPool</span></div>
+                <p class="step-desc">后端综合多方评分，向奖池智能合约提交最终的结算 (Settlement) 指令。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 10 -->
+        <div class="step-card">
+            <div class="step-num">10</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">RewardPool</span> → <span class="role">Agents</span></div>
+                <p class="step-desc">智能合约根据最终得分比例，自动将 reward 资金分发给对应的 Agents。</p>
+            </div>
+        </div>
+
+        <!-- 步骤 11 -->
+        <div class="step-card">
+            <div class="step-num">11</div>
+            <div class="step-content">
+                <div class="step-route"><span class="role">Backend</span> → <span class="role">Frontend</span></div>
+                <p class="step-desc">后端异步更新前端看板 (Leaderboard)，展示最新的节点排名和收益。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
+   
