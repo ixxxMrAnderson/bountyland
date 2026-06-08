@@ -1,0 +1,1317 @@
+﻿{
+    "network":  "sepolia",
+    "chainId":  11155111,
+    "contract":  "ComputeOutsourcePlatform",
+    "address":  "0x312df1acC20c6Fc1e5Dd97DdBA151C3eC7CEFC04",
+    "abi":  [
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "initialResultOracle",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "initialMinWorkerStake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "initialMinValidatorStake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "initialValidatorRewardBps",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "constructor"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "previousOwner",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "newOwner",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "OwnershipTransferred",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "account",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "bool",
+                                       "name":  "isValidator",
+                                       "type":  "bool"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "reputation",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "ReputationUpdated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "previousOracle",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "newOracle",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "ResultOracleUpdated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "validator",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "workerScore",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "validatorScore",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "string",
+                                       "name":  "reportURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "bytes32",
+                                       "name":  "reportHash",
+                                       "type":  "bytes32"
+                                   }
+                               ],
+                    "name":  "ResultSubmitted",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "account",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "RewardClaimed",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "account",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "bool",
+                                       "name":  "isValidator",
+                                       "type":  "bool"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "totalStake",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "StakeDeposited",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "_minWorkerStake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "_minValidatorStake",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "StakeRequirementsUpdated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "account",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "bool",
+                                       "name":  "isValidator",
+                                       "type":  "bool"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "StakeWithdrawn",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "refundAmount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "TaskCancelled",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "creator",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "string",
+                                       "name":  "taskURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "string",
+                                       "name":  "orderURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "bytes32",
+                                       "name":  "criteriaHash",
+                                       "type":  "bytes32"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "rewardPool",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "deadline",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "TaskCreated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "totalWorkerReward",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "totalValidatorReward",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "refundAmount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "TaskFinalized",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "funder",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "rewardPool",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "TaskFunded",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "validator",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "stake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "reputation",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "ValidatorRegistered",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "validator",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "ValidatorRewardAllocated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "previousBps",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "newBps",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "ValidatorRewardBpsUpdated",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "string",
+                                       "name":  "outputURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "bytes32",
+                                       "name":  "outputHash",
+                                       "type":  "bytes32"
+                                   }
+                               ],
+                    "name":  "WorkerOutputSubmitted",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "stake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "reputation",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "WorkerRegistered",
+                    "type":  "event"
+                },
+                {
+                    "anonymous":  false,
+                    "inputs":  [
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "indexed":  true,
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "indexed":  false,
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "WorkerRewardAllocated",
+                    "type":  "event"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "INITIAL_REPUTATION",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "pure",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "MAX_BPS",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "pure",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "MAX_REPUTATION",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "pure",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "SCORE_SCALE",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "pure",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "cancelTask",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "claimReward",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "string",
+                                       "name":  "taskURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "internalType":  "string",
+                                       "name":  "orderURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "internalType":  "bytes32",
+                                       "name":  "criteriaHash",
+                                       "type":  "bytes32"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "deadline",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "createTask",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "taskId",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "depositValidatorStake",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "depositWorkerStake",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "finalizeTask",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "fundTask",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "getTaskCore",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "address",
+                                        "name":  "creator",
+                                        "type":  "address"
+                                    },
+                                    {
+                                        "internalType":  "string",
+                                        "name":  "taskURI",
+                                        "type":  "string"
+                                    },
+                                    {
+                                        "internalType":  "string",
+                                        "name":  "orderURI",
+                                        "type":  "string"
+                                    },
+                                    {
+                                        "internalType":  "bytes32",
+                                        "name":  "criteriaHash",
+                                        "type":  "bytes32"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "deadline",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "enum PlatformBase.TaskStatus",
+                                        "name":  "status",
+                                        "type":  "uint8"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "getTaskStats",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "rewardPool",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "totalFinalScore",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "totalWorkerReward",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "totalValidatorReward",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "workerCount",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "evaluatedWorkerCount",
+                                        "type":  "uint256"
+                                    },
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "validatedResultCount",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "getTaskWorkers",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "address[]",
+                                        "name":  "",
+                                        "type":  "address[]"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "getWorkerAverageScore",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "minValidatorStake",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "minWorkerStake",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "nextTaskId",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "owner",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "address",
+                                        "name":  "",
+                                        "type":  "address"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "account",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "pendingRewards",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "registerValidator",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "registerWorker",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "payable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "resultOracle",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "address",
+                                        "name":  "",
+                                        "type":  "address"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "results",
+                    "outputs":  [
+                                    {
+                                        "components":  [
+                                                           {
+                                                               "internalType":  "address",
+                                                               "name":  "validator",
+                                                               "type":  "address"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "workerScore",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "validatorScore",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "string",
+                                                               "name":  "reportURI",
+                                                               "type":  "string"
+                                                           },
+                                                           {
+                                                               "internalType":  "bytes32",
+                                                               "name":  "reportHash",
+                                                               "type":  "bytes32"
+                                                           },
+                                                           {
+                                                               "internalType":  "bool",
+                                                               "name":  "submitted",
+                                                               "type":  "bool"
+                                                           }
+                                                       ],
+                                        "internalType":  "struct PlatformBase.Result",
+                                        "name":  "",
+                                        "type":  "tuple"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "newResultOracle",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "setResultOracle",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "newMinWorkerStake",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "newMinValidatorStake",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "setStakeRequirements",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "newValidatorRewardBps",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "setValidatorRewardBps",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "submissions",
+                    "outputs":  [
+                                    {
+                                        "components":  [
+                                                           {
+                                                               "internalType":  "address",
+                                                               "name":  "worker",
+                                                               "type":  "address"
+                                                           },
+                                                           {
+                                                               "internalType":  "string",
+                                                               "name":  "outputURI",
+                                                               "type":  "string"
+                                                           },
+                                                           {
+                                                               "internalType":  "bytes32",
+                                                               "name":  "outputHash",
+                                                               "type":  "bytes32"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "submittedAt",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "bool",
+                                                               "name":  "submitted",
+                                                               "type":  "bool"
+                                                           }
+                                                       ],
+                                        "internalType":  "struct PlatformBase.WorkerSubmission",
+                                        "name":  "",
+                                        "type":  "tuple"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "validator",
+                                       "type":  "address"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "workerScore",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "validatorScore",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "string",
+                                       "name":  "reportURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "internalType":  "bytes32",
+                                       "name":  "reportHash",
+                                       "type":  "bytes32"
+                                   }
+                               ],
+                    "name":  "submitResult",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "taskId",
+                                       "type":  "uint256"
+                                   },
+                                   {
+                                       "internalType":  "string",
+                                       "name":  "outputURI",
+                                       "type":  "string"
+                                   },
+                                   {
+                                       "internalType":  "bytes32",
+                                       "name":  "outputHash",
+                                       "type":  "bytes32"
+                                   }
+                               ],
+                    "name":  "submitWorkerOutput",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "newOwner",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "transferOwnership",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+
+                               ],
+                    "name":  "validatorRewardBps",
+                    "outputs":  [
+                                    {
+                                        "internalType":  "uint256",
+                                        "name":  "",
+                                        "type":  "uint256"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "validator",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "validators",
+                    "outputs":  [
+                                    {
+                                        "components":  [
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "stake",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "reputation",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "completedEvaluations",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "bool",
+                                                               "name":  "active",
+                                                               "type":  "bool"
+                                                           }
+                                                       ],
+                                        "internalType":  "struct PlatformBase.ValidatorProfile",
+                                        "name":  "",
+                                        "type":  "tuple"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "withdrawValidatorStake",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "uint256",
+                                       "name":  "amount",
+                                       "type":  "uint256"
+                                   }
+                               ],
+                    "name":  "withdrawWorkerStake",
+                    "outputs":  [
+
+                                ],
+                    "stateMutability":  "nonpayable",
+                    "type":  "function"
+                },
+                {
+                    "inputs":  [
+                                   {
+                                       "internalType":  "address",
+                                       "name":  "worker",
+                                       "type":  "address"
+                                   }
+                               ],
+                    "name":  "workers",
+                    "outputs":  [
+                                    {
+                                        "components":  [
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "stake",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "reputation",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "completedTasks",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "uint256",
+                                                               "name":  "totalScore",
+                                                               "type":  "uint256"
+                                                           },
+                                                           {
+                                                               "internalType":  "bool",
+                                                               "name":  "active",
+                                                               "type":  "bool"
+                                                           }
+                                                       ],
+                                        "internalType":  "struct PlatformBase.WorkerProfile",
+                                        "name":  "",
+                                        "type":  "tuple"
+                                    }
+                                ],
+                    "stateMutability":  "view",
+                    "type":  "function"
+                }
+            ],
+    "deployment":  {
+                       "transactionHash":  "0x33e1dea4f47761668a2b847d33a1868c6eaba3bc6c97962dea0899dab9317451",
+                       "blockNumber":  11012837
+                   }
+}

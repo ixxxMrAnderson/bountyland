@@ -7,6 +7,12 @@
     "dev": "node tools/dev.js",
     "dev:api": "node apps/api/src/server.js",
     "dev:web": "node apps/web/server.js",
-    "check": "node --check apps/api/src/server.js && node --check apps/web/server.js && node --check tools/dev.js"
+    "check": "node --check apps/api/src/server.js && node --check apps/web/server.js && node --check tools/dev.js && node --check scripts/deploy-sepolia.cjs",
+    "contracts:compile": "hardhat compile",
+    "contracts:deploy:sepolia": "hardhat run scripts/deploy-sepolia.cjs --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "hardhat": "^2.22.19"
   }
 }

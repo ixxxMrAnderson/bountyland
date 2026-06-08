@@ -2,6 +2,11 @@
 node_modules/
 dist/
 build/
+contracts/build/
+contracts/build-optimized/
+contracts/artifacts/
+contracts/cache/
+contracts/deployments/
 coverage/
 __pycache__/
 .env
