@@ -1,0 +1,7 @@
+flowchart LR
+    U["用户"] --> T["任务受理与拆解 Agent"]
+    T --> R{"任务类型路由"}
+    R --> D["数据集 Miner"]
+    R --> C["代码 Debug Miner"]
+    D --> O["产物 / 结果"]
+    C --> O

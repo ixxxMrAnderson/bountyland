@@ -1,0 +1,7 @@
+flowchart LR
+    F["前端"] --> A["Agent Backend"]
+    G["Go Backend"] --> A
+    A --> H["LangGraph Workflows"]
+    H --> T["任务受理 Agent"]
+    H --> D["数据集 Miner Graph"]
+    H --> C["Debug Miner Graph"]

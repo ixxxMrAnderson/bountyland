@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { 
-  Bot, 
-  Cpu, 
-  Scale, 
-  ListTodo, 
-  Sparkles, 
-  Check, 
-  Coins, 
-  TrendingUp, 
-  ChevronRight, 
+import React, { useEffect, useState } from 'react';
+import {
+  Bot,
+  Cpu,
+  Scale,
+  ListTodo,
+  Sparkles,
+  Check,
+  Coins,
+  TrendingUp,
+  ChevronRight,
   ArrowRight,
   ShieldAlert,
   Send,
@@ -33,22 +33,24 @@ import { ValidatorPanel } from './components/ValidatorPanel';
 import { ActivityCard } from './components/ActivityCard';
 import { ActivityDetailModal } from './components/ActivityDetailModal';
 
-import { 
-  getCriteriaOptionsForTask, 
-  initialTasks, 
-  getInitialActivities, 
-  generateHash 
+import {
+  initialTasks,
+  getInitialActivities,
+  generateHash
 } from './mockData';
-import { 
-  Task, 
-  Activity, 
-  WalletState, 
-  CriteriaOption, 
-  MinerSubmission, 
-  ApprovalItem 
+import {
+  Task,
+  Activity,
+  WalletState,
+  CriteriaOption,
+  MinerSubmission,
+  ApprovalItem
 } from './types';
 
 import { useTranslation, getLocalizedTask, getLocalizedTaskTitle, getLocalizedCriteria } from './locales';
+import { runInitialAgentFlow, finalizeAgentFlowWithCriteria } from './agentFlow/agentPipeline';
+import { requestZAiStrategyQuestions } from './agentFlow/zaiModel';
+import { AgentFlowDraft, StrategyQuestion, StrategyQuestionOption, ZAiInferredSpec, ZAiStrategyResponse } from './agentFlow/types';
 
 export default function App() {
   const { t, locale, setLanguage } = useTranslation();
@@ -90,11 +92,11 @@ export default function App() {
   };
 
   const [activeTab, setActiveTab] = useState<'DefineNewTask' | 'ActiveTasks' | 'Activities'>('DefineNewTask');
-  
+
   // Database State (Mock persistent records in memo state)
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activities, setActivities] = useState<Activity[]>(getInitialActivities());
-  
+
   // Wallet state containing Cobo credentials
   const [wallet, setWallet] = useState<WalletState>({
     connected: true,
@@ -114,6 +116,7 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<Array<{
     sender: 'user' | 'agent';
     text: string;
+    flowStep?: 'methodology' | 'strategy';
     criteriaOptions?: CriteriaOption[];
     selectedOptionId?: string;
     orderPreview?: {
@@ -122,11 +125,27 @@ export default function App() {
       reward: number;
       passScore: number;
       options: CriteriaOption;
+      agentJson?: AgentFlowDraft['finalOrderJson'];
+      settlementPolicy?: AgentFlowDraft['finalOrderJson']['settlementPolicy'];
+      methodology?: ZAiStrategyResponse['scoringMethodology'];
+      strategyChoices?: Array<{
+        question: string;
+        answer: string;
+        description: string;
+      }>;
     };
+    agentFlowDraft?: AgentFlowDraft;
+    strategyResponse?: ZAiStrategyResponse;
   }>>([]);
+  const [strategyInput, setStrategyInput] = useState('');
+  const [strategySelections, setStrategySelections] = useState<Record<string, string>>({});
+  const [rewardPoolInput, setRewardPoolInput] = useState('');
+  const [methodologyAccepted, setMethodologyAccepted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingStatusIndex, setTypingStatusIndex] = useState(0);
   const [stage, setStage] = useState<'prompt' | 'options' | 'pact_ready' | 'deployed'>('prompt');
   const [tempCreatedTask, setTempCreatedTask] = useState<any>(null);
+  const [agentFlowDraft, setAgentFlowDraft] = useState<AgentFlowDraft | null>(null);
 
   // Global Alerts feed
   const [feedback, setFeedback] = useState<{ type: 'success' | 'alert' | 'error'; message: string } | null>(null);
@@ -137,6 +156,129 @@ export default function App() {
     setTimeout(() => setFeedback(null), 6000);
   };
 
+  useEffect(() => {
+    if (!isTyping) {
+      setTypingStatusIndex(0);
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setTypingStatusIndex((prev) => prev + 1);
+    }, 1600);
+
+    return () => window.clearInterval(intervalId);
+  }, [isTyping]);
+
+  const getTypingStatusText = () => {
+    const zhMessages = stage === 'pact_ready'
+      ? [
+        '正在把 methodology 和策略选择写入计算订单...',
+        '正在生成 reward threshold 与 miner 排名分成...',
+        '正在整理最终 agent JSON 和 Cobo Pact 参数...'
+      ]
+      : methodologyAccepted
+        ? [
+          '正在根据已确认 methodology 生成 validator 策略问题...',
+          '正在校准 AI / 人工 validator 评分占比选项...',
+          '正在构造 threshold、refund 与 reward 分配策略...'
+        ]
+        : [
+          '正在理解用户任务目标和输出格式...',
+          '正在推断 miner 提交物的验收维度...',
+          '正在生成高层打分方法论、rubric 和参考依据...',
+          '正在把方法论压缩成可确认的任务规格...'
+        ];
+
+    const enMessages = stage === 'pact_ready'
+      ? [
+        'Writing methodology and strategy choices into the computation order...',
+        'Generating reward threshold and miner ranking payouts...',
+        'Preparing final agent JSON and Cobo Pact parameters...'
+      ]
+      : methodologyAccepted
+        ? [
+          'Generating validator strategy questions from the accepted methodology...',
+          'Calibrating AI / human validator scoring mix options...',
+          'Constructing threshold, refund, and reward distribution strategy...'
+        ]
+        : [
+          'Interpreting the user task objective and output format...',
+          'Inferring acceptance dimensions for miner submissions...',
+          'Drafting scoring methodology, rubric, and compact references...',
+          'Compressing methodology into a confirmable task specification...'
+        ];
+
+    const messages = locale === 'zh' ? zhMessages : enMessages;
+    return messages[typingStatusIndex % messages.length];
+  };
+
+  const applyModelInferredSpec = (
+    draft: AgentFlowDraft,
+    inferredSpec?: ZAiInferredSpec
+  ): AgentFlowDraft => {
+    if (!inferredSpec) return draft;
+
+    const taskInfo = {
+      ...draft.taskInfo,
+      ...inferredSpec.taskInfo,
+      taskId: draft.taskInfo.taskId,
+      creatorId: draft.taskInfo.creatorId
+    };
+    const userRequirements = {
+      ...draft.userRequirements,
+      ...inferredSpec.userRequirements
+    };
+    const scoringCriteria = {
+      ...draft.scoringCriteria,
+      ...inferredSpec.scoringCriteria,
+      criteriaOptions: draft.scoringCriteria.criteriaOptions
+    };
+
+    return {
+      ...draft,
+      taskInfo,
+      userRequirements,
+      scoringCriteria,
+      finalOrderJson: {
+        ...draft.finalOrderJson,
+        taskInfo,
+        userRequirements,
+        scoringData: scoringCriteria
+      }
+    };
+  };
+
+  const getRewardPoolAmount = () => {
+    const amount = Number(rewardPoolInput);
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+  };
+
+  const canGenerateComputationOrder = () => (
+    areAllStrategyQuestionsAnswered() && getRewardPoolAmount() !== null
+  );
+
+  const applyRewardPoolToDraft = (draft: AgentFlowDraft, rewardPoolEth: number): AgentFlowDraft => {
+    const taskInfo = {
+      ...draft.taskInfo,
+      budgetEth: rewardPoolEth,
+      depositEth: rewardPoolEth
+    };
+
+    return {
+      ...draft,
+      taskInfo,
+      finalOrderJson: {
+        ...draft.finalOrderJson,
+        taskInfo
+      },
+      trace: draft.trace.map((step) => (
+        step.id === 'task-info'
+          ? { ...step, summary: `Created task id ${taskInfo.taskId}, reward pool ${taskInfo.budgetEth} ETH.` }
+          : step
+      ))
+    };
+  };
+
   // Create Task conversational flow dispatch
   const handleChatPromptSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,44 +286,183 @@ export default function App() {
 
     const userText = userInput;
     setUserInput('');
-    
+    setStrategySelections({});
+    setRewardPoolInput('');
+    setMethodologyAccepted(false);
+
     // 1. Post User prompt in messages
     setChatMessages((prev) => [...prev, { sender: 'user', text: userText }]);
     setIsTyping(true);
     setStage('options');
 
     // 2. Generate customized criteria option sets
-    setTimeout(() => {
-      const matchedOptions = getCriteriaOptionsForTask(userText);
-      const enText = `Hi! I am the z.ai Platform Spec Agent. I parsed your task and generated 2 custom-tailored validator criteria options suited for your budget. Select the rule card that best matches your target accuracy:`;
-      const zhText = `你好！我是 z.ai 平台的规格设定智能代理（Spec Agent）。我已经解析了您的算力业务需求，并为您生成了 2 套契合预算的验收与验证机制。请在下方选择最吻合您精度目标的规则选项：`;
+    setTimeout(async () => {
+      const draft = await runInitialAgentFlow(userText);
+      if (draft.taskInfo.budgetEth > 0) {
+        setRewardPoolInput(String(draft.taskInfo.budgetEth));
+      }
+      const strategyResponse = await requestZAiStrategyQuestions(draft, locale, 'methodology');
+      const modelDraft = applyModelInferredSpec(draft, strategyResponse.inferredSpec);
+      const draftWithStrategy: AgentFlowDraft = {
+        ...modelDraft,
+        strategyResponse,
+        model: {
+          provider: 'z.ai',
+          model: strategyResponse.model,
+          mode: strategyResponse.mode
+        }
+      };
+      setAgentFlowDraft(draftWithStrategy);
+      const matchedOptions = draftWithStrategy.scoringCriteria.criteriaOptions;
+      const enText = `Hi! I am the z.ai Platform Spec Agent. I drafted a scoring methodology for evaluating the task result. Please review it first:`;
+      const zhText = `你好！我是 z.ai 平台的规格设定智能代理（Spec Agent）。我先为这个任务生成了一套结果验收/打分方法论，请先确认是否满意：`;
       setChatMessages((prev) => [
         ...prev,
         {
           sender: 'agent',
           text: locale === 'zh' ? zhText : enText,
-          criteriaOptions: matchedOptions
+          flowStep: 'methodology',
+          criteriaOptions: matchedOptions,
+          agentFlowDraft: draftWithStrategy,
+          strategyResponse
         }
       ]);
       setIsTyping(false);
     }, 1200);
   };
 
+  const handleSelectStrategyOption = (
+    question: StrategyQuestion,
+    option: StrategyQuestionOption
+  ) => {
+    setStrategySelections((prev) => ({
+      ...prev,
+      [question.id]: option.id
+    }));
+  };
+
+  const handleAcceptMethodology = async () => {
+    if (!agentFlowDraft || isTyping) return;
+
+    setIsTyping(true);
+    const strategyResponse = await requestZAiStrategyQuestions(agentFlowDraft, locale, 'strategy');
+    const mergedStrategyResponse: ZAiStrategyResponse = {
+      ...strategyResponse,
+      inferredSpec: strategyResponse.inferredSpec || agentFlowDraft.strategyResponse?.inferredSpec,
+      scoringMethodology: strategyResponse.scoringMethodology || agentFlowDraft.strategyResponse?.scoringMethodology
+    };
+    const draftWithStrategy: AgentFlowDraft = {
+      ...agentFlowDraft,
+      strategyResponse: mergedStrategyResponse,
+      model: {
+        provider: 'z.ai',
+        model: mergedStrategyResponse.model,
+        mode: mergedStrategyResponse.mode
+      }
+    };
+
+    setAgentFlowDraft(draftWithStrategy);
+    setMethodologyAccepted(true);
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        sender: 'user',
+        text: locale === 'zh' ? '满意，继续选择策略' : 'Looks good, continue to strategy choices'
+      },
+      {
+        sender: 'agent',
+        text: locale === 'zh'
+          ? `好的。下面请完成 ${mergedStrategyResponse.strategyQuestions.length} 个策略选择，并填写任务托管 Reward Pool 金额；我会据此生成计算订单。`
+          : `Great. Please answer the ${mergedStrategyResponse.strategyQuestions.length} strategy questions below and enter the task escrow Reward Pool amount; then I will generate the computation order.`,
+        flowStep: 'strategy',
+        criteriaOptions: draftWithStrategy.scoringCriteria.criteriaOptions,
+        agentFlowDraft: draftWithStrategy,
+        strategyResponse: mergedStrategyResponse
+      }
+    ]);
+    setIsTyping(false);
+  };
+
+  const handleStrategyPromptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!strategyInput.trim() || !agentFlowDraft || isTyping) return;
+
+    const userText = strategyInput;
+    setStrategyInput('');
+    setStrategySelections({});
+    setRewardPoolInput('');
+    setMethodologyAccepted(false);
+    setChatMessages((prev) => [...prev, { sender: 'user', text: userText }]);
+    setIsTyping(true);
+
+    setTimeout(async () => {
+      const refinedInput = `${agentFlowDraft.rawUserInput}\n\nUser strategy refinement: ${userText}`;
+      const draft = await runInitialAgentFlow(refinedInput);
+      const strategyResponse = await requestZAiStrategyQuestions(draft, locale, 'methodology');
+      const modelDraft = applyModelInferredSpec(draft, strategyResponse.inferredSpec);
+      const draftWithStrategy: AgentFlowDraft = {
+        ...modelDraft,
+        strategyResponse,
+        model: {
+          provider: 'z.ai',
+          model: strategyResponse.model,
+          mode: strategyResponse.mode
+        }
+      };
+      setAgentFlowDraft(draftWithStrategy);
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: 'agent',
+          text: locale === 'zh'
+            ? '我根据你的补充重新生成了打分方法论。请先确认是否满意，然后再进入策略选择。'
+            : 'I regenerated the scoring methodology based on your refinement. Please review it first, then continue to strategy choices.',
+          flowStep: 'methodology',
+          criteriaOptions: draftWithStrategy.scoringCriteria.criteriaOptions,
+          agentFlowDraft: draftWithStrategy,
+          strategyResponse
+        }
+      ]);
+      setIsTyping(false);
+    }, 800);
+  };
+
   // User selects an option inside conversational cards
   const handleSelectCriteriaOption = (option: CriteriaOption) => {
+    const rewardPoolAmount = getRewardPoolAmount();
+    if (rewardPoolAmount === null) {
+      triggerAlarm(
+        'alert',
+        locale === 'zh'
+          ? '请先填写任务托管 Reward Pool 金额。'
+          : 'Please enter the task escrow Reward Pool amount first.'
+      );
+      return;
+    }
+
+    const finalizedDraftBase = agentFlowDraft
+      ? finalizeAgentFlowWithCriteria(agentFlowDraft, option, strategySelections, agentFlowDraft.strategyResponse)
+      : null;
+    const finalizedDraft = finalizedDraftBase
+      ? applyRewardPoolToDraft(finalizedDraftBase, rewardPoolAmount)
+      : null;
+    if (finalizedDraft) {
+      setAgentFlowDraft(finalizedDraft);
+    }
+
     // 1. Log select action in chat
     setChatMessages((prev) => {
-      const updated = [...prev];
-      const lastMsgIdx = updated.length - 1;
-      if (lastMsgIdx >= 0) {
-        updated[lastMsgIdx] = { ...updated[lastMsgIdx], selectedOptionId: option.id };
-      }
-      return updated;
+      return prev.map((message) => (
+        message.criteriaOptions
+          ? { ...message, selectedOptionId: option.id }
+          : message
+      ));
     });
 
-    const enMeSelect = `I choose Option: ${option.name}`;
-    const zhMeSelect = `我选择验收标准指标：${locale === 'zh' ? (option.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计') : option.name}`;
-    
+    const enMeSelect = `Confirm z.ai validator strategy and reward pool: ${rewardPoolAmount} ETH`;
+    const zhMeSelect = `确认 z.ai 生成的 validator 验收策略，托管 Reward Pool 为 ${rewardPoolAmount} ETH`;
+
     setChatMessages((prev) => [
       ...prev,
       { sender: 'user', text: locale === 'zh' ? zhMeSelect : enMeSelect }
@@ -192,15 +473,17 @@ export default function App() {
 
     // 2. Build computation order preview
     setTimeout(() => {
-      const reward = 0.120;
-      const deposit = 0.120;
+      const reward = rewardPoolAmount;
+      const deposit = rewardPoolAmount;
       const passScore = option.id.includes('correctness') ? 80 : 72;
 
-      const enAgentText = `Excellent choice. I compiled your request into a ready-to-sign Smart Contract Computation Order with budget deposit requirements. Review the Pact and sign to deploy the task on-chain:`;
-      const zhAgentText = `明智的选择。我已经将您的需求集成一份已就绪的“多签智能合约计算订单”，该订单附带了预算托管代扣要求。请预览契约详情，然后签名将其安全上链发布：`;
+      const enAgentText = `Excellent choice. I compiled your request into a ready-to-sign Smart Contract Computation Order with an explicit ${rewardPoolAmount} ETH escrow Reward Pool. Review the Pact and sign to deploy the task on-chain:`;
+      const zhAgentText = `明智的选择。我已经将您的需求集成一份已就绪的“多签智能合约计算订单”，并明确设置托管 Reward Pool 为 ${rewardPoolAmount} ETH。请预览契约详情，然后签名将其安全上链发布：`;
 
-      const enSumText = "Generate custom data complying with chosen metrics. All worker outputs audited dynamically.";
-      const zhSumText = "生成符合指定数据规范的高质量算力数据集。所有矿工节点成果通过独立 AI 动态审计校验。";
+      const enSumText = "Generate custom data complying with chosen metrics. Miner submissions are scored by AI reference review plus human validators.";
+      const zhSumText = "生成符合指定数据规范的高质量算力数据集。miner 提交由 AI 参考评分和人工 validator 共同打分。";
+      const methodology = finalizedDraft?.strategyResponse?.scoringMethodology;
+      const strategyChoices = getSelectedStrategyChoices();
 
       setChatMessages((prev) => [
         ...prev,
@@ -212,26 +495,97 @@ export default function App() {
             deposit,
             reward,
             passScore,
-            options: option
+            options: option,
+            agentJson: finalizedDraft?.finalOrderJson,
+            settlementPolicy: finalizedDraft?.finalOrderJson.settlementPolicy,
+            methodology,
+            strategyChoices
           }
         }
       ]);
 
       const mockDepl = {
-        title: `Decentralized Outsourcing Task #${tasks.length + 1}`,
-        description: `Natural language query defined: "${chatMessages[0]?.text || 'Outsource task computation'}"`,
-        rewardPool: reward,
-        depositAmount: deposit,
+        title: finalizedDraft?.taskInfo.title || `Decentralized Outsourcing Task #${tasks.length + 1}`,
+        description: `Natural language query defined: "${finalizedDraft?.rawUserInput || chatMessages[0]?.text || 'Outsource task computation'}"`,
+        rewardPool: finalizedDraft?.taskInfo.budgetEth || reward,
+        depositAmount: finalizedDraft?.taskInfo.depositEth || deposit,
         aiThresholdLine: passScore,
         criteriaName: option.name,
         selectedCriteriaOption: option,
-        outputFormat: option.outputRequirements.split(' ')[0] || 'JSONL',
-        rawPromptText: chatMessages[0]?.text || ''
+        outputFormat: finalizedDraft?.userRequirements.outputFormat || option.outputRequirements.split(' ')[0] || 'JSONL',
+        rawPromptText: finalizedDraft?.rawUserInput || chatMessages[0]?.text || ''
       };
 
       setTempCreatedTask(mockDepl);
       setIsTyping(false);
     }, 1000);
+  };
+
+  const handleConfirmAgentStrategy = () => {
+    if (!areAllStrategyQuestionsAnswered()) {
+      triggerAlarm(
+        'alert',
+        locale === 'zh'
+          ? '请先完成全部策略问题选择，再生成计算订单。'
+          : 'Please answer all strategy questions before generating the order.'
+      );
+      return;
+    }
+    if (getRewardPoolAmount() === null) {
+      triggerAlarm(
+        'alert',
+        locale === 'zh'
+          ? '请填写一个大于 0 的任务托管 Reward Pool 金额。'
+          : 'Please enter a Reward Pool amount greater than 0.'
+      );
+      return;
+    }
+
+    const recommendedCriteria = agentFlowDraft?.scoringCriteria.criteriaOptions[0];
+    if (!recommendedCriteria) {
+      triggerAlarm('error', locale === 'zh' ? '还没有可确认的 z.ai 策略，请先提交任务描述。' : 'No z.ai strategy is ready yet. Submit a task prompt first.');
+      return;
+    }
+    handleSelectCriteriaOption(recommendedCriteria);
+  };
+
+  const areAllStrategyQuestionsAnswered = () => {
+    const questions = agentFlowDraft?.strategyResponse?.strategyQuestions || [];
+    if (questions.length === 0) return false;
+    return questions.every((question) => Boolean(strategySelections[question.id]));
+  };
+
+  const getStrategySelectionProgress = () => {
+    const questions = agentFlowDraft?.strategyResponse?.strategyQuestions || [];
+    const answered = questions.filter((question) => Boolean(strategySelections[question.id])).length;
+    return { answered, total: questions.length };
+  };
+
+  const getLatestStrategyMessageIndex = () => {
+    for (let index = chatMessages.length - 1; index >= 0; index -= 1) {
+      if (chatMessages[index].flowStep === 'strategy') return index;
+    }
+    return -1;
+  };
+
+  const getLatestMethodologyMessageIndex = () => {
+    for (let index = chatMessages.length - 1; index >= 0; index -= 1) {
+      if (chatMessages[index].flowStep === 'methodology') return index;
+    }
+    return -1;
+  };
+
+  const getSelectedStrategyChoices = () => {
+    const questions = agentFlowDraft?.strategyResponse?.strategyQuestions || [];
+    return questions.map((question) => {
+      const selectedOptionId = strategySelections[question.id];
+      const selectedOption = question.options.find((option) => option.id === selectedOptionId);
+      return {
+        question: question.question,
+        answer: selectedOption?.label || selectedOptionId || '',
+        description: selectedOption?.description || ''
+      };
+    }).filter((choice) => Boolean(choice.answer));
   };
 
   // User clicks "Secure Deposit & Create Task"
@@ -297,7 +651,7 @@ export default function App() {
       wallet.balance -= tempCreatedTask.depositAmount;
 
       triggerAlarm('success', `Task successfully deployed! Order parameters written on-chain with ipfs hashes!`);
-      
+
       // Update dialogue board
       setChatMessages((prev) => [
         ...prev,
@@ -317,9 +671,9 @@ export default function App() {
     } else if (target.type === 'RewardDistribution') {
       // Award payouts
       const details = target.details;
-      
+
       // Update targeted task and submissions to Settled status
-      setTasks((prevTasks) => 
+      setTasks((prevTasks) =>
         prevTasks.map((t) => {
           if (t.id === details.taskId) {
             return {
@@ -341,7 +695,7 @@ export default function App() {
       );
 
       // Update related activities to Settled
-      setActivities((prevHistory) => 
+      setActivities((prevHistory) =>
         prevHistory.map((act) => {
           if (act.submissionId === details.submissionId) {
             let updatedReward = act.reward;
@@ -355,7 +709,7 @@ export default function App() {
               ...act,
               status: 'Settled',
               reward: updatedReward,
-              info: act.type === 'Mining' 
+              info: act.type === 'Mining'
                 ? `Mining activity | Settled | Final score: ${details.finalScore} | Distributed!`
                 : `Validation activity | Settled | Deviation: ${details.delta} | Settle complete!`
             };
@@ -373,7 +727,7 @@ export default function App() {
     // Resolve Pending statuses
     setWallet((prev) => ({
       ...prev,
-      pendingApprovalsList: prev.pendingApprovalsList.map((item) => 
+      pendingApprovalsList: prev.pendingApprovalsList.map((item) =>
         item.id === id ? { ...item, status: 'Approved' } : item
       )
     }));
@@ -382,7 +736,7 @@ export default function App() {
   const handleRejectWalletItem = (id: string) => {
     setWallet((prev) => ({
       ...prev,
-      pendingApprovalsList: prev.pendingApprovalsList.map((item) => 
+      pendingApprovalsList: prev.pendingApprovalsList.map((item) =>
         item.id === id ? { ...item, status: 'Rejected' } : item
       )
     }));
@@ -405,7 +759,7 @@ export default function App() {
     };
 
     // Update tasks state
-    setTasks((prev) => 
+    setTasks((prev) =>
       prev.map((t) => {
         if (t.id === activeMineTask.id) {
           return {
@@ -450,7 +804,7 @@ export default function App() {
     if (!activeValidateTask) return;
 
     // 1. Update task and target submission structures
-    setTasks((prevTasks) => 
+    setTasks((prevTasks) =>
       prevTasks.map((t) => {
         if (t.id === activeValidateTask.id) {
           return {
@@ -549,7 +903,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-dark-bg font-sans flex flex-col antialiased text-slate-100">
-      
+
       {/* Dynamic Floating Feedback Banner */}
       {feedback && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce max-w-sm sm:max-w-md w-full">
@@ -578,7 +932,7 @@ export default function App() {
         
         {/* ================= LEFT SIDEBAR PANEL ================= */}
         <div className="hidden md:flex w-72 lg:w-80 flex-col justify-between p-6 bg-slate-950 shrink-0 gap-6 border-r border-slate-850">
-          
+
           <div className="flex flex-col gap-6">
             {/* Logo and Brand Title */}
             <div className="flex items-center gap-3">
@@ -663,7 +1017,7 @@ export default function App() {
 
         {/* ================= RIGHT PORT CONTENT SCREEN ================= */}
         <div className="flex-1 flex flex-col overflow-y-auto">
-          
+
           {/* Top Panel Banner */}
           <header className="border-b border-slate-850/60 px-6 py-4 flex items-center justify-between bg-slate-950/40 sticky top-0 backdrop-blur-md z-40 shrink-0">
             <div className="flex items-center gap-4">
@@ -731,11 +1085,11 @@ export default function App() {
 
           {/* Core Page Content Router */}
           <main className="p-6 flex-1 flex flex-col">
-            
+
             {/* ====== PORT TAB 1: DEFINE NEW TASK (Conversational ChatGPT Layout) ====== */}
             {activeTab === 'DefineNewTask' && (
               <div className="flex-1 flex flex-col justify-between max-w-3xl w-full mx-auto space-y-6">
-                
+
                 {/* Intro Hero view when conversation is empty */}
                 {chatMessages.length === 0 ? (
                   <div className="flex-1 flex flex-col justify-center items-center text-center py-12 space-y-4">
@@ -753,7 +1107,7 @@ export default function App() {
 
                     {/* Pre-packaged quick input suggestions */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md pt-6 text-left">
-                      <button 
+                      <button
                         onClick={() => {
                           const zhPrompt = "我们需要一个包含 100 个带标注的智能合约 Solidity 重入漏洞安全审计问答数据集。";
                           const enPrompt = "We need a QA dataset containing 100 annotated smart contract code audits exploring reentrancy vector edge cases in Solidity.";
@@ -772,7 +1126,7 @@ export default function App() {
                         <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition shrink-0" />
                       </button>
 
-                      <button 
+                      <button
                         onClick={() => {
                           const zhPrompt = "定制一份包含 500 个多轮演算法推导的金融商业推演逻辑基准问答数据集，用于大语言模型强化微调。";
                           const enPrompt = "Outsource a high fidelity reasoning QA benchmark dataset with 500 multi-turn logical solutions for finance model training.";
@@ -796,16 +1150,16 @@ export default function App() {
                   /* Active message logs thread */
                   <div className="flex-1 space-y-5 overflow-y-auto pr-1 pb-6 max-h-[76vh] md:max-h-[78vh]">
                     {chatMessages.map((msg, index) => (
-                      <div 
-                        key={index} 
+                      <div
+                        key={index}
                         className={`flex gap-3 max-w-[85%] ${
                           msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
                         }`}
                       >
                         {/* Avatar */}
                         <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-mono text-xs ${
-                          msg.sender === 'user' 
-                            ? 'bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20' 
+                          msg.sender === 'user'
+                            ? 'bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20'
                             : 'bg-brand-indigo/10 text-brand-indigo border border-brand-indigo/20'
                         }`}>
                           {msg.sender === 'user' ? (locale === 'zh' ? '我' : 'Me') : <Bot className="w-4 h-4 text-brand-purple" />}
@@ -821,73 +1175,195 @@ export default function App() {
 
                           {/* Render Criteria Cards Option */}
                           {msg.criteriaOptions && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                              {msg.criteriaOptions.map((opt) => {
-                                const isSelected = msg.selectedOptionId === opt.id;
-                                let optName = opt.name;
-                                let optDesc = opt.description;
-                                if (locale === 'zh') {
-                                  optName = opt.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计';
-                                  optDesc = opt.id.includes('correctness') 
-                                    ? '深度考核代码逻辑正确性、测试用例无错契合度以及对智能合约漏洞精确解析得分，权重分配重点在逻辑审查'
-                                    : '高宽容边缘场景覆盖规则，注重多轮思维推理的连贯与输出格式的严格对账（JSONL），适用于大规模常规模型校准';
-                                }
-                                return (
-                                  <div 
-                                    key={opt.id} 
-                                    className={`bg-slate-950 p-3.5 rounded-xl border flex flex-col justify-between transition-all relative ${
-                                      isSelected 
-                                        ? 'border-brand-cyan ring-1 ring-brand-cyan/30' 
-                                        : 'border-slate-850 hover:border-slate-700'
-                                    }`}
-                                  >
+                            <div className="space-y-3 pt-2">
+                              {msg.strategyResponse && (
+                                <div className="bg-slate-950/80 border border-brand-indigo/20 rounded-xl p-3 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
                                     <div>
-                                      <h4 className="font-display font-semibold text-xs text-white mb-1.5 flex items-center justify-between">
-                                        {optName}
-                                        {isSelected && <span className="bg-brand-cyan text-slate-950 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">✓</span>}
-                                      </h4>
-                                      <p className="text-[10px] text-slate-400 font-mono leading-relaxed mt-1">{optDesc}</p>
-                                      
-                                      <div className="text-[9px] text-slate-500 uppercase font-mono mt-3 select-none">
-                                        {locale === 'zh' ? '部分考核指标：' : 'Checking checkmarks:'}
-                                      </div>
-                                      <ul className="text-[9px] text-slate-400 space-y-1 mt-1 pl-2 list-disc list-inside">
-                                        {opt.checklist.slice(0, 2).map((li, i) => {
-                                          let checklistItemZh = li;
-                                          if (locale === 'zh') {
-                                            checklistItemZh = checklistItemZh
-                                              .replace('Verify outputs contain exactly matching structure elements requested by user', '核对输出结构中是否包含用户指定的全部结构对象')
-                                              .replace('Check for empty output objects or fallback values', '核对是否存在空对象或非法的退化默认值')
-                                              .replace('Score correct mapping parameters based on solidity documentation specs', '根据 Solidity 官方编译规范，检测重入漏洞代码行定位映射的精确性')
-                                              .replace('Check syntax error presence under JS compiler simulation', '在编译器模拟沙盒中检测其是否存在硬语法编译错误');
-                                          }
-                                          return (
-                                            <li key={i}>{checklistItemZh}</li>
-                                          );
-                                        })}
-                                      </ul>
+                                      <span className="text-[10px] text-brand-purple font-mono font-bold uppercase">
+                                        {msg.strategyResponse.mode === 'api' ? 'z.ai official model' : 'z.ai mock fallback'}
+                                      </span>
+                                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                                        {msg.strategyResponse.agentReasoningSummary}
+                                      </p>
                                     </div>
-
-                                    {/* Action choice picker */}
-                                    <button
-                                      type="button"
-                                      disabled={stage !== 'options'}
-                                      onClick={() => handleSelectCriteriaOption(opt)}
-                                      className={`w-full mt-4 font-bold text-[10px] py-1.5 rounded transition cursor-pointer ${
-                                        isSelected 
-                                          ? 'bg-brand-cyan text-slate-950' 
-                                          : stage === 'options'
-                                            ? 'bg-slate-900 hover:bg-slate-850 text-slate-300'
-                                            : 'bg-slate-900 text-slate-650 cursor-not-allowed'
-                                      }`}
-                                    >
-                                      {isSelected 
-                                        ? (locale === 'zh' ? '验收指标已选定' : 'Rule Selected Verified') 
-                                        : (locale === 'zh' ? '选择此标准指标' : 'Select Metric Rule')}
-                                    </button>
+                                    <span className="text-[9px] text-slate-500 font-mono shrink-0">
+                                      {msg.strategyResponse.model}
+                                    </span>
                                   </div>
-                                );
-                              })}
+
+                                  {msg.flowStep === 'methodology' && msg.strategyResponse.scoringMethodology && (
+                                    <div className="rounded-lg bg-slate-900 border border-slate-850 p-3 space-y-3">
+                                      <div>
+                                        <h4 className="text-xs text-white font-bold leading-relaxed">
+                                          {msg.strategyResponse.scoringMethodology.title}
+                                        </h4>
+                                        <p className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                                          {msg.strategyResponse.scoringMethodology.summary}
+                                        </p>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {(msg.strategyResponse.scoringMethodology.scoringRubric || []).map((item) => (
+                                          <div key={item.dimension} className="rounded border border-slate-800 bg-slate-950 p-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-[10px] text-white font-semibold">{item.dimension}</span>
+                                              <span className="text-[9px] text-brand-cyan font-mono">{item.weight}%</span>
+                                            </div>
+                                            <p className="text-[9px] text-slate-500 leading-relaxed mt-1">{item.description}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {(msg.strategyResponse.scoringMethodology.citations || []).length > 0 && (
+                                        <div className="space-y-1">
+                                          <div className="text-[9px] text-slate-500 font-mono uppercase">
+                                            {locale === 'zh' ? '方法参考' : 'References'}
+                                          </div>
+                                          {(msg.strategyResponse.scoringMethodology.citations || []).map((citation) => (
+                                            <div key={`${citation.label}-${citation.source}`} className="text-[9px] text-slate-400 leading-relaxed">
+                                              <span className="text-slate-300 font-semibold">{citation.label}</span>
+                                              {citation.source && <span> · {citation.source}</span>}
+                                              {citation.reason && <span> · {citation.reason}</span>}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                                        <button
+                                          type="button"
+                                          onClick={handleAcceptMethodology}
+                                          disabled={methodologyAccepted || isTyping || index !== getLatestMethodologyMessageIndex()}
+                                          className={`rounded-lg text-[10px] font-bold py-2 transition ${
+                                            methodologyAccepted || isTyping || index !== getLatestMethodologyMessageIndex()
+                                              ? 'bg-slate-950 text-slate-650 border border-slate-800 cursor-not-allowed'
+                                              : 'bg-brand-indigo hover:bg-brand-indigo/80 text-white cursor-pointer'
+                                          }`}
+                                        >
+                                          {methodologyAccepted
+                                            ? (locale === 'zh' ? '已确认方法论' : 'Methodology accepted')
+                                            : (locale === 'zh' ? '满意，继续选择策略' : 'Looks good, continue')}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => triggerAlarm('alert', locale === 'zh' ? '可以在下方输入框补充你想修改的打分方法。' : 'Use the input below to refine the scoring methodology.')}
+                                          disabled={methodologyAccepted || isTyping || index !== getLatestMethodologyMessageIndex()}
+                                          className={`rounded-lg border border-slate-800 text-[10px] font-bold py-2 transition ${
+                                            methodologyAccepted || isTyping || index !== getLatestMethodologyMessageIndex()
+                                              ? 'bg-slate-950 text-slate-650 cursor-not-allowed'
+                                              : 'bg-slate-950 hover:bg-slate-850 text-slate-300 cursor-pointer'
+                                          }`}
+                                        >
+                                          {locale === 'zh' ? '不满意，我要补充' : 'Revise methodology'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {msg.flowStep === 'strategy' && index === getLatestStrategyMessageIndex() && (
+                                    <div className="space-y-2">
+                                      {msg.strategyResponse.strategyQuestions.map((question) => (
+                                      <div key={question.id} className="rounded-lg bg-slate-900 border border-slate-850 p-3 space-y-2">
+                                        <div>
+                                          <h4 className="text-[11px] text-white font-semibold leading-relaxed">{question.question}</h4>
+                                          <p className="text-[10px] text-slate-500 leading-relaxed mt-1">{question.whyItMatters}</p>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {(question.criteriaCoverage || []).map((item) => (
+                                            <span key={item} className="px-2 py-0.5 rounded border border-slate-800 text-[9px] text-slate-400 font-mono">
+                                              {item}
+                                            </span>
+                                          ))}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          {(question.options || []).map((option) => {
+                                            const selected = strategySelections[question.id] === option.id;
+                                            return (
+                                              <button
+                                                key={option.id}
+                                                type="button"
+                                                disabled={stage !== 'options' || isTyping}
+                                                onClick={() => handleSelectStrategyOption(question, option)}
+                                                className={`text-left rounded-lg border p-2.5 transition ${
+                                                  selected
+                                                    ? 'bg-brand-cyan/10 border-brand-cyan/50 text-white'
+                                                    : stage === 'options'
+                                                      ? 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300 cursor-pointer'
+                                                      : 'bg-slate-950 border-slate-850 text-slate-600 cursor-not-allowed'
+                                                }`}
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="text-[10px] font-bold">{option.label}</span>
+                                                  {selected && <Check className="w-3.5 h-3.5 text-brand-cyan shrink-0" />}
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 leading-relaxed mt-1">{option.description}</p>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {msg.flowStep === 'strategy' && index === getLatestStrategyMessageIndex() && (
+                                <div className="rounded-lg bg-slate-950 border border-slate-800 p-3 space-y-2">
+                                  <label className="flex items-center gap-1.5 text-[10px] text-white font-bold">
+                                    <Coins className="w-3.5 h-3.5 text-brand-cyan" />
+                                    {locale === 'zh' ? '任务托管 Reward Pool 金额' : 'Task Escrow Reward Pool'}
+                                  </label>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.001"
+                                      inputMode="decimal"
+                                      value={rewardPoolInput}
+                                      disabled={stage !== 'options' || isTyping}
+                                      onChange={(event) => setRewardPoolInput(event.target.value)}
+                                      placeholder={locale === 'zh' ? '例如 0.01' : 'e.g. 0.01'}
+                                      className="min-w-0 flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-cyan/60 disabled:text-slate-600"
+                                    />
+                                    <span className="shrink-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-[11px] text-slate-300 font-mono">
+                                      ETH
+                                    </span>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 leading-relaxed">
+                                    {locale === 'zh'
+                                      ? '这笔钱是 miner/validator 可分配的托管奖池，不是 gas fee；如果所有 miner 提交都低于 threshold，大部分会按退款规则退回。'
+                                      : 'This is the escrowed reward pool for miners/validators, not gas. If all miner submissions fall below threshold, most of it follows the refund rule.'}
+                                  </p>
+                                </div>
+                              )}
+
+                              {msg.flowStep === 'strategy' && index === getLatestStrategyMessageIndex() && (
+                                <button
+                                  type="button"
+                                  disabled={stage !== 'options' || isTyping || !canGenerateComputationOrder()}
+                                  onClick={handleConfirmAgentStrategy}
+                                  className={`w-full font-bold text-[11px] py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+                                    stage === 'options' && !isTyping && canGenerateComputationOrder()
+                                      ? 'bg-brand-indigo hover:bg-brand-indigo/80 text-white cursor-pointer'
+                                      : 'bg-slate-950 text-slate-650 cursor-not-allowed'
+                                  }`}
+                                >
+                                  {canGenerateComputationOrder()
+                                    ? (locale === 'zh' ? '确认策略并生成计算订单' : 'Confirm strategy and generate order')
+                                    : !areAllStrategyQuestionsAnswered()
+                                      ? (locale === 'zh'
+                                        ? `请先完成策略选择 ${getStrategySelectionProgress().answered}/${getStrategySelectionProgress().total}`
+                                        : `Answer strategy questions ${getStrategySelectionProgress().answered}/${getStrategySelectionProgress().total}`)
+                                      : (locale === 'zh'
+                                        ? '请填写 Reward Pool 金额'
+                                        : 'Enter Reward Pool amount')}
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -897,11 +1373,12 @@ export default function App() {
                               <h4 className="text-xs uppercase font-mono font-bold tracking-wider text-brand-indigo flex items-center gap-1.5">
                                 <Bot className="w-4 h-4" /> {locale === 'zh' ? '链上计算订单详情 (Specification)' : 'Computation Order Spec'}
                               </h4>
-                              
+
                               <div className="grid grid-cols-2 gap-3.5 text-xs text-slate-400 font-mono">
                                 <div className="space-y-0.5">
-                                  <span>{locale === 'zh' ? '多签托管预算:' : 'Deposit Balance:'}</span>
+                                  <span>{locale === 'zh' ? '托管 Reward Pool:' : 'Escrowed Reward Pool:'}</span>
                                   <span className="block font-bold text-white text-sm">{msg.orderPreview.deposit} ETH</span>
+                                  <span className="block text-[9px] text-slate-600">{locale === 'zh' ? '非 gas fee' : 'not gas'}</span>
                                 </div>
                                 <div className="space-y-0.5">
                                   <span>{locale === 'zh' ? '合格判定标准线:' : 'Validator Rule Line:'}</span>
@@ -910,7 +1387,7 @@ export default function App() {
                                 <div className="space-y-0.5">
                                   <span>{locale === 'zh' ? '验证专家指南:' : 'Verifier Guidelines:'}</span>
                                   <span className="block font-bold text-brand-cyan select-all max-w-[130px] truncate">
-                                    {locale === 'zh' ? (msg.orderPreview.options.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计') : msg.orderPreview.options.name}
+                                    {locale === 'zh' ? 'Z.AI 验收策略' : msg.orderPreview.options.name}
                                   </span>
                                 </div>
                                 <div className="space-y-0.5">
@@ -918,6 +1395,116 @@ export default function App() {
                                   <span className="block font-bold text-slate-300 select-all truncate max-w-[130px]" title="ComputeOutsourcePlatform">ComputeEscrow</span>
                                 </div>
                               </div>
+
+                              {msg.orderPreview.methodology && (
+                                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
+                                  <div className="text-[10px] text-brand-cyan font-mono font-bold uppercase">
+                                    {locale === 'zh' ? 'Z.AI 打分方法论' : 'Z.AI scoring methodology'}
+                                  </div>
+                                  <div>
+                                    <h5 className="text-xs text-white font-semibold">
+                                      {msg.orderPreview.methodology.title}
+                                    </h5>
+                                    <p className="text-[10px] text-slate-400 leading-relaxed mt-1">
+                                      {msg.orderPreview.methodology.summary}
+                                    </p>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {(msg.orderPreview.methodology.scoringRubric || []).slice(0, 4).map((item) => (
+                                      <div key={item.dimension} className="rounded bg-slate-950 border border-slate-850 p-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-[10px] text-slate-200 font-semibold">{item.dimension}</span>
+                                          <span className="text-[9px] text-brand-cyan font-mono">{item.weight}%</span>
+                                        </div>
+                                        <p className="text-[9px] text-slate-500 leading-relaxed mt-1">{item.description}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {msg.orderPreview.strategyChoices && msg.orderPreview.strategyChoices.length > 0 && (
+                                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
+                                  <div className="text-[10px] text-brand-cyan font-mono font-bold uppercase">
+                                    {locale === 'zh' ? '已确认策略选择' : 'Confirmed strategy choices'}
+                                  </div>
+                                  <div className="space-y-2">
+                                    {msg.orderPreview.strategyChoices.map((choice) => (
+                                      <div key={`${choice.question}-${choice.answer}`} className="rounded bg-slate-950 border border-slate-850 p-2">
+                                        <div className="text-[9px] text-slate-500 leading-relaxed">{choice.question}</div>
+                                        <div className="text-[10px] text-white font-semibold mt-1">{choice.answer}</div>
+                                        {choice.description && (
+                                          <div className="text-[9px] text-slate-500 leading-relaxed mt-1">{choice.description}</div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {msg.orderPreview.settlementPolicy && (
+                                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
+                                  <div className="text-[10px] text-brand-cyan font-mono font-bold uppercase">
+                                    {locale === 'zh' ? 'Reward / Threshold 结算策略' : 'Reward / threshold settlement'}
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div className="rounded bg-slate-950 border border-slate-850 p-2">
+                                      <div className="text-[9px] text-slate-500">{locale === 'zh' ? '可获得 reward 的 miner 最低分' : 'Minimum score for miner reward'}</div>
+                                      <div className="text-sm text-white font-bold mt-1">
+                                        {msg.orderPreview.settlementPolicy.eligibleMinerThreshold}/100
+                                      </div>
+                                    </div>
+                                    <div className="rounded bg-slate-950 border border-slate-850 p-2">
+                                      <div className="text-[9px] text-slate-500">{locale === 'zh' ? '评分组成' : 'Scoring mix'}</div>
+                                      <div className="text-[10px] text-slate-300 leading-relaxed mt-1">
+                                        {msg.orderPreview.settlementPolicy.scoringMix}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {(msg.orderPreview.settlementPolicy.minerRewardRanking || []).map((rankRule) => (
+                                      <div key={rankRule.rank} className="flex items-center justify-between gap-3 rounded bg-slate-950 border border-slate-850 p-2">
+                                        <div>
+                                          <div className="text-[10px] text-white font-semibold">
+                                            #{rankRule.rank} {locale === 'zh' ? 'miner' : 'miner'}
+                                          </div>
+                                          <div className="text-[9px] text-slate-500 leading-relaxed">{rankRule.condition}</div>
+                                        </div>
+                                        <div className="text-brand-emerald font-mono text-xs font-bold shrink-0">
+                                          {rankRule.rewardSharePercent}%
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="flex items-center justify-between gap-3 rounded bg-slate-950 border border-slate-850 p-2">
+                                      <span className="text-[10px] text-slate-300 font-semibold">{locale === 'zh' ? 'validator 奖励池' : 'validator reward pool'}</span>
+                                      <span className="text-brand-cyan font-mono text-xs font-bold">
+                                        {msg.orderPreview.settlementPolicy.validatorRewardSharePercent}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 leading-relaxed">
+                                    {msg.orderPreview.settlementPolicy.refundRule}
+                                  </p>
+                                </div>
+                              )}
+
+                              {msg.orderPreview.agentJson && (
+                                <details className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+                                  <summary className="cursor-pointer text-[10px] text-brand-cyan font-mono font-bold uppercase">
+                                    {locale === 'zh' ? '查看最终 Agent JSON' : 'View final agent JSON'}
+                                  </summary>
+                                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[9px] text-slate-400">
+                                    <div><span className="text-slate-200 font-semibold">taskInfo</span>: {locale === 'zh' ? '订单标题、用户明确填写的 reward pool / deposit 和创建者字段。' : 'Order title, user-entered reward pool / deposit, and creator fields.'}</div>
+                                    <div><span className="text-slate-200 font-semibold">userRequirements</span>: {locale === 'zh' ? '模型从用户自然语言中推断出的任务目的、详细要求和输出格式。' : 'Task purpose, requirements, and output format inferred from the user prompt.'}</div>
+                                    <div><span className="text-slate-200 font-semibold">scoringData</span>: {locale === 'zh' ? 'validator 用来打分的规则、权重和通过线。' : 'Rules, weights, and pass line used by validators.'}</div>
+                                    <div><span className="text-slate-200 font-semibold">settlementPolicy</span>: {locale === 'zh' ? 'miner 获奖阈值、排名分成、validator 奖励和退款规则。' : 'Miner threshold, ranking payouts, validator pool, and refund rule.'}</div>
+                                    <div><span className="text-slate-200 font-semibold">validatorStrategy</span>: {locale === 'zh' ? '用户选择的 validator 数量、格式严格度、AI/人工占比等策略。' : 'User-selected validator scale, format strictness, AI/human mix, and related strategy.'}</div>
+                                  </div>
+                                  <pre className="mt-3 max-h-48 overflow-auto text-[9px] leading-relaxed text-slate-400 font-mono whitespace-pre-wrap">
+                                    {JSON.stringify(msg.orderPreview.agentJson, null, 2)}
+                                  </pre>
+                                </details>
+                              )}
 
                               {stage === 'pact_ready' ? (
                                 <button
@@ -949,7 +1536,7 @@ export default function App() {
                       <div className="flex gap-3 text-xs text-slate-500 items-center pl-1 pt-1">
                         <Bot className="w-4 h-4 text-brand-indigo animate-spin" />
                         <span className="font-mono animate-pulse">
-                          {locale === 'zh' ? 'z.ai 审计合约正在组装元数据 Schema...' : 'Agent assembling metadata schemas...'}
+                          {getTypingStatusText()}
                         </span>
                       </div>
                     )}
@@ -976,7 +1563,35 @@ export default function App() {
                       type="submit"
                       disabled={!userInput.trim() || isTyping}
                       className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-all ${
-                        userInput.trim() && !isTyping 
+                        userInput.trim() && !isTyping
+                          ? 'bg-brand-indigo hover:bg-brand-indigo/80 text-white shadow-lg cursor-pointer'
+                          : 'bg-slate-950 text-slate-650 cursor-not-allowed'
+                      }`}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                )}
+
+                {stage === 'options' && (
+                  <form onSubmit={handleStrategyPromptSubmit} className="bg-slate-900 p-4 border border-slate-800 rounded-2xl flex gap-3 shadow-xl relative mt-4">
+                    <textarea
+                      value={strategyInput}
+                      onChange={(e) => setStrategyInput(e.target.value)}
+                      placeholder={locale === 'zh' ? "继续告诉 z.ai 你的策略偏好，例如：我希望 validator 少而精，并且 JSONL 必须严格可解析..." : "Continue prompting z.ai with strategy preferences, e.g. fewer expert validators and strict JSONL parsing..."}
+                      className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none resize-none leading-relaxed h-12 py-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleStrategyPromptSubmit(e);
+                        }
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!strategyInput.trim() || isTyping}
+                      className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-all ${
+                        strategyInput.trim() && !isTyping
                           ? 'bg-brand-indigo hover:bg-brand-indigo/80 text-white shadow-lg cursor-pointer'
                           : 'bg-slate-950 text-slate-650 cursor-not-allowed'
                       }`}
@@ -992,7 +1607,7 @@ export default function App() {
             {/* ====== PORT TAB 2: ACTIVE TASKS (Marketplace Listing Grid) ====== */}
             {activeTab === 'ActiveTasks' && (
               <div className="space-y-6">
-                
+
                 {/* Search / Filter Subheader Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 p-4 rounded-xl border border-slate-850/60 shrink-0">
                   <div className="space-y-1">
@@ -1003,7 +1618,7 @@ export default function App() {
                       {locale === 'zh' ? t('marketSub') || '在 Arbitrum 侧链沙盒中浏览已锁定 Cobo 多签托管并经过 z.ai 自然语言规格化的算力需求。' : 'Browse computational requests deployed with verified deposit escrows.'}
                     </p>
                   </div>
-                  
+
                   {/* Category toggles */}
                   <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800 gap-1 text-[11px] font-semibold select-none">
                     <span className="px-3 py-1 bg-brand-indigo/10 text-brand-indigo rounded font-bold border border-brand-indigo/15">
@@ -1046,7 +1661,7 @@ export default function App() {
             {/* ====== PORT TAB 3: ACTIVITIES (User working ledger records) ====== */}
             {activeTab === 'Activities' && (
               <div className="space-y-5 animate-scale-up">
-                
+
                 {/* Stats board */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
                   <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-1.5 hover:border-slate-800 transition duration-150">

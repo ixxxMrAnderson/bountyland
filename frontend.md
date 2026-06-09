@@ -2,15 +2,16 @@
 
 This file defines the frontend experience for the MVP.
 
-The frontend should focus on three primary topic pages:
+The frontend should focus on four primary topic pages:
 
 ```text
 1. Define New Task
 2. Active Tasks
 3. Activities
+4. Platform Agents
 ```
 
-The goal is to make task creation feel like a natural-language agent workflow, while keeping the marketplace of executable tasks easy for miners and validators to browse.
+The goal is to make task creation feel like an agent-guided workflow, while keeping the marketplace of executable tasks easy for miners and validators to browse.
 
 ---
 
@@ -18,14 +19,152 @@ The goal is to make task creation feel like a natural-language agent workflow, w
 
 ### Core Idea
 
-This page is where the user defines a new compute outsourcing task.
+This page is where the user chooses how to define a new compute outsourcing task.
 
-The user should not start from a form with many fields. The first screen should feel closer to a ChatGPT-style initial input state:
+The user should not start from a form with many fields. The first screen should show three large platform-agent entry bubbles:
+
+```text
+┌────────────────────────────────────────────┐
+│ 我想要一个特定的数据集                     │
+│ 数据采集 / 筛查 / 清洗 agent               │
+│ Helps define dataset scope and quality     │
+└────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────┐
+│ 我想 audit 一个 Web3 协议 / 程序            │
+│ Code auditor agent                         │
+│ Helps define audit scope and evidence      │
+└────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────┐
+│ 其他计算外包任务                           │
+│ 帮忙拟定订单进入人工 miner 平台            │
+│ Uses the current order drafting workflow   │
+└────────────────────────────────────────────┘
+```
+
+### Bubble 1: Dataset Platform Agent
+
+Label:
+
+```text
+我想要一个特定的数据集
+```
+
+Subtitle:
+
+```text
+数据采集 / 筛查 / 清洗 agent
+```
+
+Short intro:
+
+```text
+For users who need a specific dataset, this platform agent helps turn a dataset idea into collection scope, filtering rules, cleaning standards, schema, quality criteria, and validator acceptance checks.
+```
+
+Examples:
+
+```text
+- CV / resume dataset
+- finance reasoning QA dataset
+- domain-specific instruction tuning dataset
+- labeled smart contract vulnerability dataset
+```
+
+MVP click behavior:
+
+```text
+Clicking this bubble opens a placeholder / coming-soon agent panel.
+The full dataset-agent interaction is pending.
+```
+
+Future interaction:
+
+```text
+The dataset agent should ask about:
+- domain and use case
+- dataset size
+- source constraints
+- privacy / licensing constraints
+- schema and output format
+- cleaning and deduplication standard
+- validation methodology
+- reward pool and settlement preference
+```
+
+### Bubble 2: Web3 Code Auditor Agent
+
+Label:
+
+```text
+我想 audit 一个 Web3 协议 / 程序
+```
+
+Subtitle:
+
+```text
+Code auditor agent
+```
+
+Short intro:
+
+```text
+For users who want to audit a Web3 protocol, smart contract, or program, this platform agent helps define audit scope, threat model, deliverables, severity rubric, test requirements, and validator review standards.
+```
+
+Examples:
+
+```text
+- Solidity contract audit
+- protocol economic/security review
+- reentrancy and access-control review
+- exploit proof-of-concept validation
+```
+
+MVP click behavior:
+
+```text
+Clicking this bubble opens a placeholder / coming-soon agent panel.
+The full code-auditor interaction is pending.
+```
+
+Future interaction:
+
+```text
+The code auditor agent should ask about:
+- repo or contract address
+- target chain / VM
+- contract scope
+- threat model and protected assets
+- expected deliverables
+- severity rubric
+- proof-of-concept requirements
+- validator qualification requirements
+```
+
+### Bubble 3: Other Compute Outsourcing Task
+
+Label:
+
+```text
+其他计算外包任务
+```
+
+Subtitle:
+
+```text
+帮忙拟定订单进入人工 miner 平台
+```
+
+This bubble uses the existing chat-first order drafting workflow.
+
+After clicking it, the UI opens:
 
 ```text
 Centered natural language input box
 Prompt placeholder:
-  "Describe the dataset, computation, or AI task you want to outsource..."
+  "Describe the dataset, computation, or AI task you want to outsource to human miners..."
 ```
 
 Example user input:
@@ -34,76 +173,19 @@ Example user input:
 帮我外包生成一个高质量的 reasoning QA 数据集，包含 1000 条问题、标准答案和简短推理过程。
 ```
 
-After the user submits, the page transforms into an interactive conversation interface.
-
-### Layout Option A: Split-Screen Task Builder
-
-After the initial input, the page can become a two-column workspace:
-
-```text
-┌──────────────────────────────┬──────────────────────────────┐
-│ User Task Definition          │ z.ai Agent                   │
-│ natural language task         │ mock criteria assistant      │
-│ budget / deadline / audit     │ validator standards          │
-│ confirmation controls         │ order preview                │
-└──────────────────────────────┴──────────────────────────────┘
-```
-
-Left side:
-
-```text
-- User's original task description
-- Editable task summary
-- Reward budget
-- Deadline
-- AI audit enabled / disabled
-- Final confirmation button
-```
-
-Right side:
-
-```text
-- z.ai Agent conversation
-- Generated validator acceptance criteria
-- Pass / fail conditions
-- Validator checklist
-- Reward rule suggestion
-- Dispute trigger
-- Computation order preview
-```
-
-Important:
-
-```text
-The z.ai Agent is currently a mock agent.
-It should be visually branded as z.ai Agent for the demo,
-but the implementation does not need to connect to a real z.ai API yet.
-```
-
-### Layout Option B: Chat-First Task Builder
-
-The simpler MVP version can be a chat-style flow:
-
-```text
-Initial state:
-  centered input box
-
-After submit:
-  conversation thread appears
-  user message shown first
-  z.ai Agent returns criteria options
-  user selects one option
-  z.ai Agent generates computation order
-  user confirms
-```
-
 Suggested flow:
 
 ```text
 1. User describes task in natural language.
-2. z.ai Agent returns 2-3 validator acceptance criteria options.
-3. User selects one criteria option.
-4. z.ai Agent generates:
+2. Platform spec agent returns a high-level scoring methodology.
+3. User confirms or revises the methodology.
+4. Platform spec agent asks strategy questions:
+   - validator access: broad crowd vs curated experts
+   - output format strictness
+   - AI reference score vs human validator weighting
+   - threshold / refund preference
+5. User enters explicit Reward Pool amount.
+6. Platform spec agent generates:
    - task summary
    - miner output requirements
    - validator checklist
@@ -113,9 +195,9 @@ Suggested flow:
    - dispute trigger
    - taskURI / orderURI / criteriaHash preview
    - Cobo Pact policy draft
-5. User confirms task creation.
-6. Task is created on-chain or mocked as on-chain for the demo.
-7. Task appears in Active Tasks.
+7. User confirms task creation.
+8. Task is created on-chain or mocked as on-chain for the demo.
+9. Task appears in Active Tasks.
 ```
 
 ### Confirmation State
@@ -133,15 +215,16 @@ Validator criteria:
   Dataset quality and diversity first.
 
 Reward:
-  0.1 ETH reward pool.
+  User-entered Reward Pool, e.g. 0.01 ETH.
 
-Deposit:
-  User pays a task deposit before the task becomes active.
+Escrow:
+  The Reward Pool is escrowed before the task becomes active.
+  This is not gas fee.
 
 AI threshold line:
   72/100
   If all miner submissions fail to pass this threshold,
-  most of the deposit is refunded to the user.
+  most of the Reward Pool is refunded to the user.
 
 Audit:
   AI audit enabled.
@@ -153,14 +236,14 @@ Contract:
 Primary action:
 
 ```text
-Pay deposit and create task
+Approve Reward Pool escrow and create task
 ```
 
 After confirmation:
 
 ```text
 Task created.
-Deposit paid.
+Reward Pool escrowed.
 Status: Active
 Available for miners.
 ```
@@ -312,7 +395,7 @@ Task summary
   created time
   deadline
   reward pool
-  deposit amount
+  escrowed Reward Pool amount
   AI threshold line
   AI audit status
 
@@ -332,10 +415,10 @@ Validator acceptance criteria
   validator checklist
   dispute trigger
 
-Deposit / refund rule
-  deposit paid by user
+Reward Pool / refund rule
+  Reward Pool escrowed by user
   if all miner submissions score below the AI threshold line,
-  most of the deposit is refunded to the user
+  most of the Reward Pool is refunded to the user
 
 Submissions
   miner submission count
@@ -471,6 +554,7 @@ This page should be in the sidebar navigation:
 Define New Task
 Active Tasks
 Activities
+Platform Agents
 ```
 
 Each activity row/card is clickable and opens the full detail for that activity.
@@ -624,7 +708,7 @@ Task summary
 Activity role: Mining / Validation
 Status timeline
 Reward calculation
-Deposit / refund rule if relevant
+Reward Pool / refund rule if relevant
 Score details
 AI audit explanation
 Cobo settlement status
@@ -657,7 +741,177 @@ Validation detail should include:
 
 ---
 
-## 4. Cobo Wallet Integration In The Frontend
+## 4. Platform Agents
+
+### Core Idea
+
+`Platform Agents` is a sidebar page dedicated to explaining the two platform-provided agents:
+
+```text
+1. Dataset Collection / Filtering / Cleaning Agent
+2. Web3 Code Auditor Agent
+```
+
+This page is not the task marketplace and not a marketing landing page. It should be a practical, technical overview that helps users understand what these agents can do, how they are backed, and how their outputs connect to the human miner / validator platform.
+
+### Sidebar Navigation
+
+The sidebar should include:
+
+```text
+Define New Task
+Active Tasks
+Activities
+Platform Agents
+```
+
+Chinese label:
+
+```text
+平台 agent 简介
+```
+
+### Page Layout
+
+Suggested layout:
+
+```text
+┌────────────────────────────────────────────────────────────┐
+│ Platform Agents                                            │
+│ Data and code-audit agents that help users define tasks    │
+├──────────────────────────────┬─────────────────────────────┤
+│ Dataset Agent                 │ Web3 Code Auditor Agent     │
+│ architecture                  │ architecture                │
+│ capabilities                  │ capabilities                │
+│ validation backing            │ validation backing          │
+│ current status                │ current status              │
+└──────────────────────────────┴─────────────────────────────┘
+```
+
+### Dataset Agent Detail
+
+The dataset agent should be described as a platform service for users who want a specific dataset but do not know how to specify collection, cleaning, schema, or validation.
+
+Architecture:
+
+```text
+User dataset intent
+  ↓
+Requirement parser
+  ↓
+Source / scope planner
+  ↓
+Schema designer
+  ↓
+Cleaning and deduplication policy generator
+  ↓
+Validator scoring methodology generator
+  ↓
+Human miner order draft
+```
+
+Capabilities:
+
+```text
+- turns natural language dataset requests into structured dataset specs
+- proposes fields, schema, format, and size
+- defines filtering and cleaning rules
+- drafts validator methodology and scoring rubric
+- suggests threshold / refund rules
+- generates order artifacts for the miner marketplace
+```
+
+Backing / credibility:
+
+```text
+- z.ai model-assisted specification drafting
+- validator review methodology
+- JSONL/schema parseability checks
+- human miner marketplace for collection and production
+- Cobo mock escrow approval for reward-pool funding
+```
+
+Current status:
+
+```text
+MVP:
+  agent intro and placeholder flow
+
+Future:
+  full interactive dataset-agent flow
+```
+
+### Web3 Code Auditor Agent Detail
+
+The code auditor agent should be described as a platform service for users who want security review, protocol audit, or program analysis.
+
+Architecture:
+
+```text
+User audit intent
+  ↓
+Scope parser
+  ↓
+Threat model generator
+  ↓
+Severity rubric generator
+  ↓
+Evidence / PoC requirement planner
+  ↓
+Validator scoring methodology generator
+  ↓
+Human miner / auditor order draft
+```
+
+Capabilities:
+
+```text
+- turns audit requests into structured audit scope
+- identifies contract/program boundaries
+- defines severity levels and expected evidence
+- drafts vulnerability checklist
+- proposes validator qualification rules
+- generates audit deliverable requirements
+```
+
+Backing / credibility:
+
+```text
+- z.ai model-assisted audit scope drafting
+- human auditor / miner execution
+- validator scoring and dispute review
+- artifact hash / URI recording
+- Cobo mock escrow approval for payout control
+```
+
+Current status:
+
+```text
+MVP:
+  agent intro and placeholder flow
+
+Future:
+  full interactive code-auditor flow
+```
+
+### Relationship To Define New Task
+
+The first two bubbles on `Define New Task` should route naturally to these platform-agent concepts.
+
+```text
+Dataset bubble:
+  routes to dataset-agent placeholder or future dataset-agent flow
+
+Web3 audit bubble:
+  routes to code-auditor-agent placeholder or future audit-agent flow
+
+Other compute outsourcing bubble:
+  routes to the existing order-drafting chat flow
+```
+
+---
+
+## 5. Cobo Wallet Integration In The Frontend
 
 ### Product Role
 
@@ -697,16 +951,16 @@ Mock connected
 
 ### Define New Task Cobo Panel
 
-When the user confirms a new task, show a Cobo Pact preview and deposit payment requirement:
+When the user confirms a new task, show a Cobo Pact preview and Reward Pool escrow requirement:
 
 ```text
 Cobo Pact Draft
-  Deposit: 0.1 ETH
-  Reward budget: 0.1 ETH
+  Reward Pool: user-entered amount, e.g. 0.01 ETH
+  Gas fee: separate wallet/network cost, not part of Reward Pool
   AI threshold line: 72/100
   Refund rule:
     If all miner submissions score below the threshold,
-    most of the deposit is refunded to the user.
+    most of the Reward Pool is refunded to the user.
   Allowed contract: ComputeOutsourcePlatform
   Allowed functions:
     createTask
@@ -721,13 +975,13 @@ Cobo Pact Draft
 Primary button:
 
 ```text
-Approve deposit and create task
+Approve Reward Pool escrow and create task
 ```
 
 For MVP:
 
 ```text
-Mock approve deposit and create task
+Mock approve Reward Pool escrow and create task
 ```
 
 For real integration:
@@ -791,7 +1045,7 @@ So the frontend should expose Cobo as contextual approval state, not as the main
 
 ---
 
-## 5. Navigation
+## 6. Navigation
 
 The top-level navigation should be:
 
@@ -799,6 +1053,7 @@ The top-level navigation should be:
 Define New Task
 Active Tasks
 Activities
+Platform Agents
 ```
 
 Optional later pages:
@@ -813,22 +1068,36 @@ For now, the product should not start with many separate dashboard pages. The fi
 
 ---
 
-## 6. MVP Frontend State Flow
+## 7. MVP Frontend State Flow
 
 ```text
-Define New Task initial input
+Define New Task agent entry bubbles
+        ↓
+User chooses one of three entry bubbles
+        ↓
+If Dataset Agent or Code Auditor Agent:
+  show platform-agent placeholder / coming-soon panel
+        ↓
+If Other Compute Outsourcing Task:
+  open existing chat-first order drafting workflow
         ↓
 User submits task description
         ↓
-z.ai Agent mock returns validator criteria options
+Platform spec agent returns scoring methodology
         ↓
-User selects criteria
+User confirms or revises methodology
         ↓
-z.ai Agent mock returns computation order preview
+Platform spec agent returns strategy questions
+        ↓
+User selects strategy options
+        ↓
+User enters explicit Reward Pool amount
+        ↓
+Platform spec agent returns computation order preview
         ↓
 User confirms task
         ↓
-User pays deposit through Cobo approval / mock approval
+User approves Reward Pool escrow through Cobo approval / mock approval
         ↓
 Task status becomes Active / On-chain mock
         ↓
@@ -853,7 +1122,7 @@ AI audit result + settlement updates Activities
 
 ---
 
-## 7. Implementation Notes
+## 8. Implementation Notes
 
 Current backend can support this flow with:
 
@@ -885,8 +1154,14 @@ wallet:
 Current mock agent behavior:
 
 ```text
+Platform Dataset Agent:
+  placeholder / pending full interaction
+
+Platform Web3 Code Auditor Agent:
+  placeholder / pending full interaction
+
 Task Criteria Agent:
-  returns validator acceptance criteria from local templates
+  drafts methodology, strategy questions, and computation order preview
 
 AI Audit Agent:
   returns a mock reference score after validator evaluation

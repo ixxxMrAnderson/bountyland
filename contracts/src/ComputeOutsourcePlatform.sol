@@ -1,103 +1,117 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-contract ComputeOutsourcePlatform {
-    uint256 public nextTaskId = 1;
-    uint256 public constant MAX_REPUTATION = 100;
+import {TaskManager} from "./base/TaskManager.sol";
+import {StakeManager} from "./base/StakeManager.sol";
+import {ResultManager} from "./base/ResultManager.sol";
 
-    struct Task {
-        address creator;
-        string taskURI;
-        string orderURI;
-        bytes32 criteriaHash;
-        uint256 rewardBudget;
-        uint256 deadline;
-        bool aiAuditEnabled;
-        bool finalized;
+/// @title ComputeOutsourcePlatform
+/// @notice Generic escrow, result recording, payout, and reputation contract for outsourced work.
+/// @dev Scoring rules stay off-chain. This contract only accepts final scores from _resultOracle.
+contract ComputeOutsourcePlatform is TaskManager, StakeManager, ResultManager {
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "not owner");
+        _;
     }
 
-    struct WorkerSubmission {
-        address worker;
-        string outputURI;
-        bytes32 outputHash;
-        bool submitted;
+    modifier onlyResultOracle() {
+        require(msg.sender == _resultOracle, "not result oracle");
+        _;
     }
 
-    struct Evaluation {
-        address validator;
-        uint256 validatorScore;
-        uint256 aiScore;
-        uint256 finalScore;
-        bool validatorSubmitted;
-        bool aiSubmitted;
-        bool finalized;
+    modifier nonReentrant() {
+        _setReentrancyLock();
+        _;
+        _clearReentrancyLock();
     }
 
-    struct ValidatorProfile {
-        uint256 stake;
-        uint256 reputation;
-        bool active;
+    constructor(
+        address initialResultOracle,
+        uint256 initialMinWorkerStake,
+        uint256 initialMinValidatorStake,
+        uint256 initialValidatorRewardBps
+    ) {
+        require(initialResultOracle != address(0), "result oracle required");
+        require(initialValidatorRewardBps <= 2_000, "validator reward too high");
+
+        _owner = msg.sender;
+        _resultOracle = initialResultOracle;
+        _minWorkerStake = initialMinWorkerStake;
+        _minValidatorStake = initialMinValidatorStake;
+        _validatorRewardBps = initialValidatorRewardBps;
+
+        emit OwnershipTransferred(address(0), msg.sender);
+        emit ResultOracleUpdated(address(0), initialResultOracle);
+        emit StakeRequirementsUpdated(initialMinWorkerStake, initialMinValidatorStake);
+        emit ValidatorRewardBpsUpdated(0, initialValidatorRewardBps);
     }
 
-    mapping(uint256 => Task) public tasks;
-    mapping(uint256 => mapping(address => WorkerSubmission)) public submissions;
-    mapping(uint256 => mapping(address => Evaluation)) public evaluations;
-    mapping(address => ValidatorProfile) public validators;
-    mapping(address => bool) public workers;
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "new owner required");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
 
-    event TaskCreated(
-        uint256 indexed taskId,
-        address indexed creator,
-        string taskURI,
-        string orderURI,
-        bytes32 criteriaHash,
-        uint256 rewardBudget
-    );
-    event WorkerRegistered(address indexed worker);
-    event ValidatorRegistered(address indexed validator, uint256 stake);
-    event WorkerOutputSubmitted(uint256 indexed taskId, address indexed worker, string outputURI);
-    event ValidatorScoreSubmitted(uint256 indexed taskId, address indexed worker, address indexed validator, uint256 score);
-    event AIScoreSubmitted(uint256 indexed taskId, address indexed worker, uint256 aiScore);
-    event EvaluationFinalized(uint256 indexed taskId, address indexed worker, uint256 finalScore, uint256 delta);
+    function setResultOracle(address newResultOracle) external onlyOwner {
+        require(newResultOracle != address(0), "result oracle required");
+        emit ResultOracleUpdated(_resultOracle, newResultOracle);
+        _resultOracle = newResultOracle;
+    }
+
+    function setStakeRequirements(uint256 newMinWorkerStake, uint256 newMinValidatorStake) external onlyOwner {
+        _minWorkerStake = newMinWorkerStake;
+        _minValidatorStake = newMinValidatorStake;
+        emit StakeRequirementsUpdated(newMinWorkerStake, newMinValidatorStake);
+    }
+
+    function setValidatorRewardBps(uint256 newValidatorRewardBps) external onlyOwner {
+        require(newValidatorRewardBps <= 2_000, "validator reward too high");
+        emit ValidatorRewardBpsUpdated(_validatorRewardBps, newValidatorRewardBps);
+        _validatorRewardBps = newValidatorRewardBps;
+    }
 
     function createTask(
         string calldata taskURI,
         string calldata orderURI,
         bytes32 criteriaHash,
-        uint256 deadline,
-        bool aiAuditEnabled
+        uint256 deadline
     ) external payable returns (uint256 taskId) {
-        require(msg.value > 0, "reward budget required");
-        require(deadline > block.timestamp, "deadline must be future");
+        return _createTask(taskURI, orderURI, criteriaHash, deadline, msg.sender, msg.value);
+    }
 
-        taskId = nextTaskId++;
-        tasks[taskId] = Task({
-            creator: msg.sender,
-            taskURI: taskURI,
-            orderURI: orderURI,
-            criteriaHash: criteriaHash,
-            rewardBudget: msg.value,
-            deadline: deadline,
-            aiAuditEnabled: aiAuditEnabled,
-            finalized: false
-        });
+    function fundTask(uint256 taskId) external payable {
+        _fundTask(taskId, msg.sender, msg.value);
+    }
 
-        emit TaskCreated(taskId, msg.sender, taskURI, orderURI, criteriaHash, msg.value);
+    function cancelTask(uint256 taskId) external nonReentrant {
+        (address creator, uint256 refundAmount) = _cancelTask(taskId);
+        _sendValue(creator, refundAmount);
     }
 
     function registerWorker() external payable {
-        workers[msg.sender] = true;
-        emit WorkerRegistered(msg.sender);
+        _registerWorker(msg.sender, msg.value);
     }
 
     function registerValidator() external payable {
-        require(msg.value > 0, "validator stake required");
-        validators[msg.sender] = ValidatorProfile({
-            stake: msg.value,
-            reputation: 70,
-            active: true
-        });
-        emit ValidatorRegistered(msg.sender, msg.value);
+        _registerValidator(msg.sender, msg.value);
+    }
+
+    function depositWorkerStake() external payable {
+        _depositWorkerStake(msg.sender, msg.value);
+    }
+
+    function depositValidatorStake() external payable {
+        _depositValidatorStake(msg.sender, msg.value);
+    }
+
+    function withdrawWorkerStake(uint256 amount) external nonReentrant {
+        _withdrawWorkerStake(msg.sender, amount);
+        _sendValue(msg.sender, amount);
+    }
+
+    function withdrawValidatorStake(uint256 amount) external nonReentrant {
+        _withdrawValidatorStake(msg.sender, amount);
+        _sendValue(msg.sender, amount);
     }
 
     function submitWorkerOutput(
@@ -105,91 +119,153 @@ contract ComputeOutsourcePlatform {
         string calldata outputURI,
         bytes32 outputHash
     ) external {
-        require(workers[msg.sender], "worker not registered");
-        require(tasks[taskId].creator != address(0), "task not found");
-
-        submissions[taskId][msg.sender] = WorkerSubmission({
-            worker: msg.sender,
-            outputURI: outputURI,
-            outputHash: outputHash,
-            submitted: true
-        });
-
-        emit WorkerOutputSubmitted(taskId, msg.sender, outputURI);
+        _submitWorkerOutput(taskId, msg.sender, outputURI, outputHash);
     }
 
-    function submitValidatorScore(
+    /// @notice Records the off-chain final result for a worker submission.
+    /// @dev The result oracle is expected to run any validation, scoring, or dataset checks off-chain.
+    function submitResult(
         uint256 taskId,
         address worker,
-        uint256 score
-    ) external {
-        require(validators[msg.sender].active, "validator not active");
-        require(score <= 100, "score out of range");
-        require(submissions[taskId][worker].submitted, "submission not found");
-
-        Evaluation storage evaluation = evaluations[taskId][worker];
-        evaluation.validator = msg.sender;
-        evaluation.validatorScore = score;
-        evaluation.validatorSubmitted = true;
-
-        emit ValidatorScoreSubmitted(taskId, worker, msg.sender, score);
+        address validator,
+        uint256 workerScore,
+        uint256 validatorScore,
+        string calldata reportURI,
+        bytes32 reportHash
+    ) external onlyResultOracle {
+        _submitResult(taskId, worker, validator, workerScore, validatorScore, reportURI, reportHash);
     }
 
-    function submitAIScore(
-        uint256 taskId,
-        address worker,
-        uint256 aiScore,
-        bytes calldata aiSignature
-    ) external {
-        require(aiSignature.length > 0, "oracle signature required");
-        require(aiScore <= 100, "score out of range");
-        require(submissions[taskId][worker].submitted, "submission not found");
-
-        Evaluation storage evaluation = evaluations[taskId][worker];
-        evaluation.aiScore = aiScore;
-        evaluation.aiSubmitted = true;
-
-        emit AIScoreSubmitted(taskId, worker, aiScore);
+    function finalizeTask(uint256 taskId) external nonReentrant {
+        Task storage task = _tasks[taskId];
+        require(msg.sender == task.creator || msg.sender == _owner, "not authorized");
+        _finalizeTask(taskId);
     }
 
-    function finalizeEvaluation(uint256 taskId, address worker) external {
-        Evaluation storage evaluation = evaluations[taskId][worker];
-        require(evaluation.validatorSubmitted, "validator score missing");
-        require(evaluation.aiSubmitted, "ai score missing");
-        require(!evaluation.finalized, "already finalized");
+    function claimReward() external nonReentrant {
+        uint256 amount = _pendingRewards[msg.sender];
+        require(amount > 0, "no reward");
 
-        ValidatorProfile storage profile = validators[evaluation.validator];
-        uint256 delta = _absDiff(evaluation.validatorScore, evaluation.aiScore);
-        uint256 validatorTrust = profile.reputation;
+        _pendingRewards[msg.sender] = 0;
+        _sendValue(msg.sender, amount);
 
-        evaluation.finalScore =
-            ((validatorTrust * evaluation.validatorScore) + ((MAX_REPUTATION - validatorTrust) * evaluation.aiScore)) /
-            MAX_REPUTATION;
-        evaluation.finalized = true;
+        emit RewardClaimed(msg.sender, amount);
+    }
 
-        if (delta <= 20 && profile.reputation < MAX_REPUTATION) {
-            profile.reputation += 1;
-        } else if (delta > 40 && profile.reputation >= 15) {
-            profile.reputation -= 15;
-        } else if (delta > 20 && profile.reputation >= 5) {
-            profile.reputation -= 5;
+    function SCORE_SCALE() external pure returns (uint256) {
+        return _SCORE_SCALE;
+    }
+
+    function MAX_REPUTATION() external pure returns (uint256) {
+        return _MAX_REPUTATION;
+    }
+
+    function INITIAL_REPUTATION() external pure returns (uint256) {
+        return _INITIAL_REPUTATION;
+    }
+
+    function MAX_BPS() external pure returns (uint256) {
+        return _MAX_BPS;
+    }
+
+    function nextTaskId() external view returns (uint256) {
+        return _nextTaskId;
+    }
+
+    function minWorkerStake() external view returns (uint256) {
+        return _minWorkerStake;
+    }
+
+    function minValidatorStake() external view returns (uint256) {
+        return _minValidatorStake;
+    }
+
+    function validatorRewardBps() external view returns (uint256) {
+        return _validatorRewardBps;
+    }
+
+    function owner() external view returns (address) {
+        return _owner;
+    }
+
+    function resultOracle() external view returns (address) {
+        return _resultOracle;
+    }
+
+    function pendingRewards(address account) external view returns (uint256) {
+        return _pendingRewards[account];
+    }
+
+    function workers(address worker) external view returns (WorkerProfile memory) {
+        return _workers[worker];
+    }
+
+    function validators(address validator) external view returns (ValidatorProfile memory) {
+        return _validators[validator];
+    }
+
+    function submissions(uint256 taskId, address worker) external view returns (WorkerSubmission memory) {
+        return _submissions[taskId][worker];
+    }
+
+    function results(uint256 taskId, address worker) external view returns (Result memory) {
+        return _results[taskId][worker];
+    }
+
+    function getTaskWorkers(uint256 taskId) external view returns (address[] memory) {
+        return _taskWorkers[taskId];
+    }
+
+    function getTaskCore(
+        uint256 taskId
+    )
+        external
+        view
+        returns (
+            address creator,
+            string memory taskURI,
+            string memory orderURI,
+            bytes32 criteriaHash,
+            uint256 deadline,
+            TaskStatus status
+        )
+    {
+        Task storage task = _tasks[taskId];
+        return (task.creator, task.taskURI, task.orderURI, task.criteriaHash, task.deadline, task.status);
+    }
+
+    function getTaskStats(
+        uint256 taskId
+    )
+        external
+        view
+        returns (
+            uint256 rewardPool,
+            uint256 totalFinalScore,
+            uint256 totalWorkerReward,
+            uint256 totalValidatorReward,
+            uint256 workerCount,
+            uint256 evaluatedWorkerCount,
+            uint256 validatedResultCount
+        )
+    {
+        Task storage task = _tasks[taskId];
+        return (
+            task.rewardPool,
+            task.totalFinalScore,
+            task.totalWorkerReward,
+            task.totalValidatorReward,
+            task.workerCount,
+            task.evaluatedWorkerCount,
+            task.validatedResultCount
+        );
+    }
+
+    function getWorkerAverageScore(address worker) external view returns (uint256) {
+        WorkerProfile storage profile = _workers[worker];
+        if (profile.completedTasks == 0) {
+            return 0;
         }
-
-        emit EvaluationFinalized(taskId, worker, evaluation.finalScore, delta);
-    }
-
-    function claimReward(uint256 taskId) external {
-        Task storage task = tasks[taskId];
-        Evaluation storage evaluation = evaluations[taskId][msg.sender];
-        require(evaluation.finalized, "evaluation not finalized");
-        require(!task.finalized, "task reward already claimed");
-
-        task.finalized = true;
-        uint256 payout = (task.rewardBudget * evaluation.finalScore) / 100;
-        payable(msg.sender).transfer(payout);
-    }
-
-    function _absDiff(uint256 left, uint256 right) private pure returns (uint256) {
-        return left >= right ? left - right : right - left;
+        return profile.totalScore / profile.completedTasks;
     }
 }
