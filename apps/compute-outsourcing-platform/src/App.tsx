@@ -19,11 +19,13 @@ import {
   Send,
   User,
   ExternalLink,
-  Info
+  Info,
+  LogOut
 } from 'lucide-react';
 
 import { CoboWalletWidget } from './components/CoboWalletWidget';
 import { NetworkStatsWidget } from './components/NetworkStatsWidget';
+import { AuthPanel } from './components/AuthPanel';
 import { TaskCard } from './components/TaskCard';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { MinerPanel } from './components/MinerPanel';
@@ -50,6 +52,43 @@ import { useTranslation, getLocalizedTask, getLocalizedTaskTitle, getLocalizedCr
 
 export default function App() {
   const { t, locale, setLanguage } = useTranslation();
+  
+  // Authenticated Developer Profile State
+  const [user, setUser] = useState<{ email: string; initials: string; walletAddress?: string } | null>(() => {
+    const saved = localStorage.getItem('zai_logged_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const handleAuthSuccess = (email: string, initials: string, walletAddress?: string) => {
+    const loggedUser = { email, initials, walletAddress };
+    setUser(loggedUser);
+    localStorage.setItem('zai_logged_user', JSON.stringify(loggedUser));
+
+    // Support automatic Cobo Wallet connectivity synchronization if logging in via Web3
+    if (walletAddress) {
+      setWallet((prev) => ({
+        ...prev,
+        connected: true,
+        address: walletAddress
+      }));
+    }
+    
+    triggerAlarm('success', t('loginSuccess'));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('zai_logged_user');
+    triggerAlarm('success', locale === 'zh' ? '成功安全退出登录。' : 'Successfully logged out safely.');
+  };
+
   const [activeTab, setActiveTab] = useState<'DefineNewTask' | 'ActiveTasks' | 'Activities'>('DefineNewTask');
   
   // Database State (Mock persistent records in memo state)
@@ -529,8 +568,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Container Layout */}
-      <div className="flex-1 flex max-w-[1440px] w-full mx-auto relative divide-x divide-slate-850/60 min-h-screen">
+      {/* Unauthenticated Security Session Guard Interception */}
+      {!user ? (
+        <AuthPanel onAuthSuccess={handleAuthSuccess} />
+      ) : (
+        <>
+          {/* Main Container Layout */}
+          <div className="flex-1 flex max-w-[1440px] w-full mx-auto relative divide-x divide-slate-850/60 min-h-screen">
         
         {/* ================= LEFT SIDEBAR PANEL ================= */}
         <div className="hidden md:flex w-72 lg:w-80 flex-col justify-between p-6 bg-slate-950 shrink-0 gap-6 border-r border-slate-850">
@@ -657,10 +701,12 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <span className="text-[10px] text-slate-500 block font-semibold uppercase">{t('devHost') || 'Developer Host'}</span>
-                <span className="text-xs text-white font-mono font-medium">glorialuo59@gmail.com</span>
+                <span className="text-xs text-white font-mono font-medium max-w-[150px] truncate" title={user?.email || 'admin'}>
+                  {user?.email || 'admin'}
+                </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan shadow shadow-black shrink-0">
-                <span className="text-xs font-bold font-mono">GL</span>
+                <span className="text-xs font-bold font-mono">{user?.initials || 'AD'}</span>
               </div>
 
               {/* Language Switcher to the right of user avatar */}
@@ -670,6 +716,15 @@ export default function App() {
               >
                 <span>{locale === 'en' ? '🇨🇳' : '🇺🇸'}</span>
                 <span>{locale === 'en' ? '中文' : 'EN'}</span>
+              </button>
+
+              {/* Secure Session Sign Out button */}
+              <button
+                onClick={handleLogout}
+                title={t('logoutBtn') || 'Sign Out'}
+                className="h-8 w-8 bg-slate-900 hover:bg-rose-955/35 hover:text-brand-rose text-slate-450 border border-slate-800 hover:border-rose-900/50 rounded-lg flex items-center justify-center cursor-pointer transition shadow shadow-black/40 select-none shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           </header>
@@ -739,7 +794,7 @@ export default function App() {
                   </div>
                 ) : (
                   /* Active message logs thread */
-                  <div className="flex-1 space-y-5 overflow-y-auto pr-1 pb-6 max-h-[60vh]">
+                  <div className="flex-1 space-y-5 overflow-y-auto pr-1 pb-6 max-h-[76vh] md:max-h-[78vh]">
                     {chatMessages.map((msg, index) => (
                       <div 
                         key={index} 
@@ -1108,6 +1163,8 @@ export default function App() {
         );
       })()}
 
+        </>
+      )}
     </div>
   );
 }

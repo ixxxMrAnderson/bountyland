@@ -203,7 +203,28 @@ export const translations = {
     alertFunded: 'Cobo Escrow release finalized! Tokens distributed according to audited score math parameters.',
     alertMinerWait: 'This task has no miner outputs yet. Take the initiative and submit computation output as a miner first!',
     alertSubmitMiner: 'Computation output submitted on-chain. Added to worker history records.',
-    alertScoreLog: 'Validation ballot logged. AI auditor reference score generated ({score}). Delta calculated.'
+    alertScoreLog: 'Validation ballot logged. AI auditor reference score generated ({score}). Delta calculated.',
+
+    // Authentication Setup
+    loginTitle: 'Sign In to z.ai Compute Gateway',
+    loginSubTitle: 'Access the audited, secure sandbox compute outsourcing platform',
+    emailLabel: 'Email Address',
+    passwordLabel: 'Password',
+    loginBtn: 'Sign In',
+    registerBtn: 'Create Account',
+    noAccount: "Don't have an account? Sign Up",
+    haveAccount: 'Already have an account? Sign In',
+    signUpTitle: 'Create Developer Account',
+    signUpSubTitle: 'Join the decentralized audit and high-performance computing grid',
+    invalidCredentials: 'Invalid or incorrect email and password combination',
+    passwordLengthError: 'Your password must be at least 6 characters long',
+    registerSuccess: 'Developer account created successfully!',
+    loginSuccess: 'Authentication authorized. Welcome back!',
+    orConnectWallet: 'Or Interface with Authorized Web3 Wallet',
+    connectWalletBtn: 'Connect Cobo Agentic Wallet',
+    connectingWallet: 'Initiating Cobo Wallet cryptographic session...',
+    walletConnectedMsg: 'Cobo Wallet authenticated successfully!',
+    logoutBtn: 'Sign Out Account'
   },
   zh: {
     // Nav & Sidebar
@@ -399,7 +420,28 @@ export const translations = {
     alertFunded: 'Cobo 托管资金合规分发完成。利益相关各方奖励金已按智能对账算法清算结转。',
     alertMinerWait: '当前此任务没有任何节点提交计算产出。请先以 Miner 身份注入结果，再行核查！',
     alertSubmitMiner: '计算成果已被提交锁定！全网节点以及对冲 AI 将执行核查。',
-    alertScoreLog: '核对投票提交通道畅通，防卫 AI 自动审计判定结果同步触发。'
+    alertScoreLog: '核对投票提交通道畅通，防卫 AI 自动审计判定结果同步触发。',
+
+    // Authentication Setup
+    loginTitle: '登录 z.ai 算力协同网关',
+    loginSubTitle: '访问经过多签审计、高防护的沙盒算力外包与协同生态平台',
+    emailLabel: '电子邮件地址',
+    passwordLabel: '登录密码',
+    loginBtn: '立即登录系统',
+    registerBtn: '注册开发者账户',
+    noAccount: '还没有开发者账户？立即注册',
+    haveAccount: '已经有开发者账户？立即登录',
+    signUpTitle: '创建开发者生态账户',
+    signUpSubTitle: '加入去中心化智能审计与高性能 GPU 协同计算矩阵',
+    invalidCredentials: '输入的邮箱地址或密码不匹配，请重新检查',
+    passwordLengthError: '为了您的资产安全，密码必须至少为 6 位字符',
+    registerSuccess: '开发者账户创建成功！已自动帮您加载沙盒初始化权限。',
+    loginSuccess: '双因子鉴权通过！欢迎回到 z.ai 算力协同平台。',
+    orConnectWallet: '或者，通过已授信的 Web3 零钱包安全直连',
+    connectWalletBtn: '连接 Cobo 智能代管钱包',
+    connectingWallet: '正在初始化 Cobo Wallet 加密交互会话...',
+    walletConnectedMsg: 'Cobo 钱包关联鉴权成功！',
+    logoutBtn: '注销/退出登录'
   }
 };
 
