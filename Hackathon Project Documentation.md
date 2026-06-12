@@ -467,31 +467,34 @@ $$ Reward_i = TotalReward \times \frac{FinalScore_i}{\sum_{j=1}^{N} FinalScore_j
 
 ---
 ## 9. 风险与缓解 (Risks)
-风险	缓解
-痛点被低估, 客户不买账	公开报告 + 真实攻击案例佐证 (黑客松后)
-Killer / Solver 输出质量参差, 评分难统一	AI Audit + Human Judge + 任务模板化
-低质量第三方 Agent 涌入	Agent profile 审核 + open review + reputation + challenge 机制
-Hall of Fame killer 表现不足影响叙事	Debug Killer 在 Demo 中使用可控 mock case, 输出 root cause / evidence / patch suggestion 的完整闭环
-评估者与 Agent 合谋	Reputation + Staking (中后期) + 偏差检测
-真实漏洞验证困难	PoC / test failure / 复现步骤作为评估标准
-隐私问题 (企业客户)	中后期引入 TEE / 加密输入
-Demo 效果不够震撼	准备 1-2 个"被 AI Audit 抓住恶意 validator"的精彩场景
+
+| 风险 (Risks) | 缓解措施 (Mitigations) |
+| :--- | :--- |
+| **痛点被低估，客户不买账** | 公开报告 + 真实攻击案例佐证 (黑客松后) |
+| **Killer / Solver 输出质量参差，评分难统一** | AI Audit + Human Judge + 任务模板化 |
+| **低质量第三方 Agent 涌入** | Agent profile 审核 + open review + reputation + challenge 机制 |
+| **Hall of Fame killer 表现不足影响叙事** | Debug Killer 在 Demo 中使用可控 mock case，输出 root cause / evidence / patch suggestion 的完整闭环 |
+| **评估者与 Agent 合谋** | Reputation + Staking (中后期) + 偏差检测 |
+| **真实漏洞验证困难** | PoC / test failure / 复现步骤作为评估标准 |
+| **隐私问题 (企业客户)** | 中后期引入 TEE / 加密输入 |
+| **Demo 效果不够震撼** | 准备 1-2 个"被 AI Audit 抓住恶意 validator"的精彩场景 |
 
 ---
 ## 10. Open Questions (留给团队继续讨论)
-付费用户优先级: 协议项目方 vs DAO 基金 vs 跨链桥 vs 交易所?
-第一个 vertical: smart contract audit vs code review vs benchmark?
-评分公式: demo 简化版 vs 生产级需要加入哪些 anti-collusion 机制?
-评估者 / Agent 的准入门槛与 staking 比例?
-第三方 Agent / solver 发布是否需要审核, 还是完全 permissionless?
-Debug Killer 是否作为第一优先级 Hall of Fame killer, 还是与 Audit Killer 并列展示?
-Agent open review 的结果是否应该完全公开, 企业私有任务如何处理?
-Agent certification 是平台中心化认证, 还是逐步 DAO / reputation 化?
-私有任务 / 加密输入是否需要早期支持?
-黑客松后是否立刻接触 1-2 个真实项目做 pilot?
-商业模式抽佣比例?
-Cobo / custody 集成是否在企业版本需要?
-原始技术文件中的 remaining items 是否需要转成产品需求?
+
+* **目标客户**：付费用户优先级：协议项目方 vs DAO 基金 vs 跨链桥 vs 交易所？
+* **首发赛道**：第一个 vertical：Smart Contract Audit vs Code Review vs Benchmark？
+* **评分机制**：评分公式：Demo 简化版 vs 生产级需要加入哪些 Anti-collusion（防合谋）机制？
+* **准入门槛**：评估者 / Agent 的准入门槛与 Staking 比例如何设定？
+* **Agent 审核**：第三方 Agent / Solver 发布是否需要审核，还是完全 Permissionless（无许可）？
+* **产品叙事**：Debug Killer 是否作为第一优先级 Hall of Fame killer，还是与 Audit Killer 并列展示？
+* **信息公开**：Agent open review 的结果是否应该完全公开，企业私有任务如何处理？
+* **认证体系**：Agent certification 是平台中心化认证，还是逐步 DAO / Reputation 化？
+* **隐私与安全**：私有任务 / 加密输入是否需要早期支持？
+* **后续推进**：黑客松后是否立刻接触 1-2 个真实项目做 Pilot（试点）？
+* **商业模式**：商业模式抽佣比例如何定？
+* **生态集成**：Cobo / Custody 集成是否在企业版本需要？
+* **需求转化**：原始技术文件中的 remaining items 是否需要转成产品需求？
 
 ---
 ## 11. 附录: 技术细节 (供评审深入了解)
