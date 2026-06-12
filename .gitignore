@@ -14,3 +14,11 @@ __pycache__/
 .env.local
 npm-debug.log*
 yarn-error.log*
+
+# Presentation / PowerPoint working files
+present*.ppt
+present*.pptx
+*.ppt
+*.pptx
+.~present*.pptx
+presentation_work/

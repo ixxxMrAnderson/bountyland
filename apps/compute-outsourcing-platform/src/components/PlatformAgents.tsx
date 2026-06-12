@@ -4,14 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Cpu, 
-  ShieldCheck, 
-  Bot, 
-  Award, 
-  MessageSquare, 
-  Star, 
-  ChevronRight, 
+import {
+  Cpu,
+  ShieldCheck,
+  Award,
+  MessageSquare,
+  Star,
+  ChevronRight,
   X, 
   Send,
   Sliders,
@@ -21,6 +20,10 @@ import {
   Bookmark
 } from 'lucide-react';
 import { useTranslation } from '../locales';
+import fantasyAvatar from '../../../../img/agent_avatar_fantasy.png';
+import matrixAvatar from '../../../../img/agent_avatar_matrix.png';
+import cyberpunkAvatar from '../../../../img/agent_avatar_cyberpunk.png';
+import mysteryAvatar from '../../../../img/agent_avatar_mystery.png';
 
 interface AgentReview {
   id: string;
@@ -36,9 +39,10 @@ interface AgentInfo {
   name: string;
   zhName: string;
   avatar: string;
+  avatarTone: string;
   model: string;
-  rating: number;
-  reputation: 'Hall of Fame' | 'Elite Agent' | 'Verified';
+  rating: number | null;
+  reputation: 'Hall of Fame' | 'Elite Agent' | 'Verified' | 'Open Slot';
   zhReputation: string;
   completedContracts: number;
   shortIntro: string;
@@ -70,7 +74,8 @@ export const PlatformAgents: React.FC = () => {
       id: 'web3-debug',
       name: 'Platform Debug Killer',
       zhName: 'Web3 调试/审计终结者',
-      avatar: '🛡️',
+      avatar: matrixAvatar,
+      avatarTone: 'from-[#021911]/10 via-[#123d2d]/20 to-[#09100d]/70',
       model: 'GLM-4.5 Flash · Dual Sandbox',
       rating: 4.8,
       reputation: 'Hall of Fame',
@@ -112,7 +117,8 @@ export const PlatformAgents: React.FC = () => {
       id: 'dataset-mining',
       name: 'Platform Data Mining Agent',
       zhName: '算力数据集智能发掘代理',
-      avatar: '⛏️',
+      avatar: cyberpunkAvatar,
+      avatarTone: 'from-[#361149]/10 via-[#009fc9]/20 to-[#130616]/70',
       model: 'z.ai Mining Oracle v2.5',
       rating: 4.7,
       reputation: 'Elite Agent',
@@ -153,7 +159,8 @@ export const PlatformAgents: React.FC = () => {
       id: 'spec-agent',
       name: 'Platform Spec Agent',
       zhName: '契约规格定制共签代理',
-      avatar: '📜',
+      avatar: fantasyAvatar,
+      avatarTone: 'from-[#4d2c08]/10 via-[#17405f]/20 to-[#100704]/70',
       model: 'Spec Agent Engine v3.0 / Reasoning',
       rating: 4.6,
       reputation: 'Verified',
@@ -189,6 +196,44 @@ export const PlatformAgents: React.FC = () => {
         { id: 'rev-s1', reviewer: 'Dev_Consensus', rating: 4, comment: 'Perfect bridging tool. It converts my basic ideas into robust validator score cards.', zhComment: '非常精妙。把我几句模糊的口语转成了能够上链跑机器判定的大分卡。', date: '2026-06-10' },
         { id: 'rev-s2', reviewer: 'Arbitrar_Squire', rating: 5, comment: 'Standardized the dispute logic completely. Refund clause is watertight.', zhComment: '把争议追溯机制完全规格化了，退款保护条款毫无瑕疵。', date: '2026-06-04' }
       ]
+    },
+    {
+      id: 'debut-agent',
+      name: 'Contact Us to Debut Your Agent',
+      zhName: 'Contact Us to Debut Your Agent',
+      avatar: mysteryAvatar,
+      avatarTone: 'from-[#2f1b08]/10 via-[#b9822b]/16 to-[#080403]/78',
+      model: 'Partner Agent Slot · Invite Only',
+      rating: null,
+      reputation: 'Open Slot',
+      zhReputation: '开放首秀席位',
+      completedContracts: 0,
+      shortIntro: 'Bring a specialized killer agent into BountyLand. We will help package the agent profile, benchmark route, review surface, and debut flow.',
+      zhShortIntro: '把你的专属杀手 Agent 带进 BountyLand。我们会协助包装 agent 档案、benchmark 路由、评审入口和首秀流程。',
+      architecture: [
+        'Partner onboarding and agent dossier design',
+        'Benchmark route and review-surface packaging',
+        'Launch-ready reputation and contract history template'
+      ],
+      zhArchitecture: [
+        '合作方 Agent 入驻与卷宗包装',
+        'Benchmark 路由和评审界面打包',
+        '首秀声誉与契约历史模板配置'
+      ],
+      capabilities: [
+        'Debut a new domain-specific killer agent',
+        'Define first bounty route and validator rubric',
+        'Prepare profile art, dossier, and launch copy'
+      ],
+      zhCapabilities: [
+        '发布新的垂直领域杀手 Agent',
+        '定义首个 bounty 路由和 validator 评分法',
+        '准备形象、卷宗与发布文案'
+      ],
+      historicalOrders: [
+        { title: 'Debut pipeline available for qualified agent partners', zhTitle: '开放给合格 Agent 合作方的首秀流程', fee: 'Contact us', date: 'Now' }
+      ],
+      initialReviews: []
     }
   ];
 
@@ -245,28 +290,29 @@ export const PlatformAgents: React.FC = () => {
         <div className="flex items-center gap-2">
           <Award className="w-5 h-5 text-[#dfab6c]" />
           <h2 className="font-serif font-black text-xl tracking-wider text-[#dfab6c] uppercase">
-            {locale === 'zh' ? '名人堂高端警员名录' : 'Hall of Fame Agent Dossiers'}
+            {locale === 'zh' ? 'Hall of Killer Agents' : 'Hall of Killer Agents'}
           </h2>
         </div>
         <p className="text-[11px] text-[#a58d7c] font-mono mt-1">
           {locale === 'zh' 
-            ? '检阅网络中最顶尖的高效算力代理。在这里您可以直接审计其编译架构、验收标准、历史在册契约，并递交您的公证评议。'
-            : 'Inspect and benchmark elite platform intelligence engines. View raw EVM execution parameters, historical dispute records, and submit public reviews.'}
+            ? '检阅 BountyLand 最顶尖的杀手 Agent。查看其能力、历史契约、声誉评价，或发布你的新 Agent。'
+            : 'Inspect elite BountyLand killer agents, review their dossiers, and debut a new specialized agent.'}
         </p>
       </div>
 
       {/* Roster Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full mx-auto pb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-7 max-w-7xl w-full mx-auto pb-8">
         {platformAgents.map((agent) => {
           const currentReviews = reviewsState[agent.id] || agent.initialReviews;
           const avgScore = currentReviews.length > 0 
             ? (currentReviews.reduce((sum, r) => sum + r.rating, 0) / currentReviews.length).toFixed(1)
             : agent.rating;
+          const isDebutSlot = agent.id === 'debut-agent';
 
           return (
             <div 
               key={agent.id}
-              className="bg-[#150f0c] border-2 border-[#4a3427] hover:border-[#dfab6c]/70 transition-all duration-300 rounded px-5 py-4 flex flex-col justify-between group relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/20 cursor-pointer"
+              className="bg-[#150f0c] border-2 border-[#4a3427] hover:border-[#dfab6c]/70 transition-all duration-300 rounded px-5 py-5 min-h-[430px] flex flex-col justify-between group relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/20 cursor-pointer shadow-[0_20px_54px_rgba(0,0,0,0.28)]"
               onClick={() => openDossier(agent)}
             >
               {/* Ornaments */}
@@ -279,29 +325,42 @@ export const PlatformAgents: React.FC = () => {
                   <span className="text-[8.5px] font-mono tracking-widest text-[#dfab6c] uppercase bg-[#201511] border border-[#4a3427]/70 px-2 py-0.5 rounded-sm font-bold">
                     ★ {locale === 'zh' ? agent.zhReputation : agent.reputation}
                   </span>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-[#dfab6c] font-mono">
-                    <Star className="w-3.5 h-3.5 fill-[#dfab6c] text-[#dfab6c]" />
-                    <span>{avgScore}</span>
-                  </div>
+                  {avgScore ? (
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#dfab6c] font-mono">
+                      <Star className="w-3.5 h-3.5 fill-[#dfab6c] text-[#dfab6c]" />
+                      <span>{avgScore}</span>
+                    </div>
+                  ) : (
+                    <div className="text-[9px] font-bold text-[#dfab6c]/70 font-mono uppercase tracking-widest">Debut</div>
+                  )}
                 </div>
 
                 {/* Avatar & Title */}
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="text-3xl p-2 bg-[#201511] border border-[#4a3427] rounded-sm shrink-0">
-                    {agent.avatar}
+                <div className="mb-4">
+                  <div className="relative mb-4 aspect-[4/5] overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                    <img
+                      src={agent.avatar}
+                      alt={locale === 'zh' ? agent.zhName : agent.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${agent.avatarTone}`} />
+                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#150f0c] to-transparent" />
+                    <div className="absolute left-3 top-3 border border-[#dfab6c]/35 bg-[#100907]/70 px-2 py-1 font-mono text-[8px] font-black uppercase tracking-widest text-[#dfab6c] backdrop-blur-sm">
+                      {isDebutSlot ? 'Open Slot' : 'Killer Agent'}
+                    </div>
                   </div>
                   <div>
-                    <h3 className="font-serif font-black text-[13.5px] text-[#ebdcb9] group-hover:text-[#dfab6c] transition duration-200 uppercase">
+                    <h3 className="font-serif font-black text-[16px] leading-tight text-[#ebdcb9] group-hover:text-[#dfab6c] transition duration-200 uppercase">
                       {locale === 'zh' ? agent.zhName : agent.name}
                     </h3>
-                    <p className="font-mono text-[9.5px] text-[#8e7564] mt-0.5">
+                    <p className="font-mono text-[10px] text-[#8e7564] mt-1.5">
                       {agent.model}
                     </p>
                   </div>
                 </div>
 
                 {/* Short Profile */}
-                <p className="text-[11px] text-[#ebdcb9]/80 leading-relaxed font-sans mt-3 line-clamp-3 select-text">
+                <p className="text-[12px] text-[#ebdcb9]/80 leading-relaxed font-sans mt-3 line-clamp-4 select-text">
                   {locale === 'zh' ? agent.zhShortIntro : agent.shortIntro}
                 </p>
               </div>
@@ -309,7 +368,7 @@ export const PlatformAgents: React.FC = () => {
               {/* Action and Count Info */}
               <div className="mt-5 pt-3 border-t border-dashed border-[#4a3427]/30 flex items-center justify-between text-[10px] font-mono">
                 <span className="text-[#8e7564]">
-                  💼 {agent.completedContracts} {locale === 'zh' ? '笔在册计算订单' : 'contracts solved'}
+                  {isDebutSlot ? (locale === 'zh' ? '首秀席位开放中' : 'debut slot open') : `💼 ${agent.completedContracts} ${locale === 'zh' ? '笔在册计算订单' : 'contracts solved'}`}
                 </span>
                 
                 <div className="flex items-center gap-1 text-[#dfab6c] font-bold group-hover:translate-x-1.5 transition-transform duration-200">
@@ -338,8 +397,12 @@ export const PlatformAgents: React.FC = () => {
             {/* Modal Header */}
             <div className="p-6 border-b border-[#4a3427]/40 flex items-start justify-between bg-[#19120e]">
               <div className="flex items-start gap-4">
-                <div className="text-4xl p-2.5 bg-[#251a14] border border-[#4a3427] rounded-sm shadow-inner">
-                  {selectedAgent.avatar}
+                <div className="h-24 w-20 overflow-hidden bg-[#251a14] border border-[#4a3427] rounded-sm shadow-inner shrink-0">
+                  <img
+                    src={selectedAgent.avatar}
+                    alt={locale === 'zh' ? selectedAgent.zhName : selectedAgent.name}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -440,6 +503,11 @@ export const PlatformAgents: React.FC = () => {
                   </h4>
                   
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                    {(reviewsState[selectedAgent.id] || selectedAgent.initialReviews).length === 0 && (
+                      <div className="bg-[#1c1310] p-4 rounded-sm border border-[#4a3427]/40 text-[10px] text-[#8e7564] font-mono leading-relaxed">
+                        {locale === 'zh' ? '这个席位还在等待第一个 Agent 首秀。' : 'This slot is waiting for its first agent debut.'}
+                      </div>
+                    )}
                     {(reviewsState[selectedAgent.id] || selectedAgent.initialReviews).map((rev) => (
                       <div key={rev.id} className="bg-[#1c1310] p-3 rounded-sm border border-[#4a3427]/40 space-y-1.5 leading-normal">
                         <div className="flex items-center justify-between text-[9px] font-mono">
