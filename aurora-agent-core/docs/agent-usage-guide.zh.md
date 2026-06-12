@@ -268,6 +268,108 @@ curl -s http://127.0.0.1:8791/v1/intake \
 - 不传：输出到 `artifacts/{task_id}`。
 - 传入：输出到指定目录。
 
+### 5.4 人工市场 Task Spec `/v1/human-market/spec`
+
+用途：
+
+- 面向“人工 Miner 自由市场”，不是平台自营 Dataset/Debug Miner。
+- 由 `Human Market Task Spec Agent` 和用户 finalize 任务定义、validator 评分细则、奖励机制。
+- 核心奖励参数为 `x, y, z, [a1, a2, ..., ay]`：
+  - `x = threshold_score`，只有最终评分 `>= x` 的 miner 才可能拿钱。
+  - `y = winner_count`，分数过线的前 `y` 个 miner 进入分账。
+  - `z = settlement_window_hours`，任务发布后的时间窗口。
+  - `[a1..ay] = winner_shares`，前 `y` 名分账比例，必须满足 `a1 + ... + ay = 1`。
+- `y` 个合格 miner 齐了之后，用户可以主动结算。
+- 时间窗口 `z` 结束后，如果合格 miner 不足 `y` 个，规则草案定义为自动退款给任务创建者。
+
+请求体字段：
+
+```json
+{
+  "user_input": "用户自然语言人工市场任务",
+  "spec_confirmed": false,
+  "use_llm": false,
+  "task_definition": null,
+  "validator_criteria": null,
+  "reward_rule": null
+}
+```
+
+示例：
+
+```bash
+curl -s http://127.0.0.1:8791/v1/human-market/spec \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "user_input":"发布一个人工 debug 悬赏任务：修复 GitHub 仓库测试失败，交付 patch 和验证报告。validator 评分看测试是否通过、补丁安全性和说明质量。threshold 80，前3个 miner 按 [0.5,0.3,0.2] 分钱，时间窗口 7天。"
+  }'
+```
+
+典型输出状态：
+
+```json
+{
+  "status": "awaiting_spec_confirmation",
+  "ready": false,
+  "draft_human_market_spec": {
+    "market_mode": "human_miner_market",
+    "task_definition": {
+      "title": "人工 Debug 悬赏任务",
+      "deliverables": ["修改后的代码或 patch.diff", "复现与验证说明", "关键风险说明"]
+    },
+    "validator_criteria": {
+      "scoring_dimensions": [
+        {"name": "reproduction_fix_success", "weight": 45},
+        {"name": "patch_minimality_and_safety", "weight": 30},
+        {"name": "explanation_and_handoff_quality", "weight": 25}
+      ]
+    },
+    "reward_rule": {
+      "threshold_score": 80,
+      "winner_count": 3,
+      "settlement_window_hours": 168,
+      "winner_shares": [0.5, 0.3, 0.2]
+    }
+  }
+}
+```
+
+用户确认后：
+
+```bash
+curl -s http://127.0.0.1:8791/v1/human-market/spec \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "user_input":"发布一个人工 debug 悬赏任务：修复 GitHub 仓库测试失败，交付 patch 和验证报告。validator 评分看测试是否通过、补丁安全性和说明质量。threshold 80，前3个 miner 按 [0.5,0.3,0.2] 分钱，时间窗口 7天。",
+    "spec_confirmed": true
+  }'
+```
+
+输出会包含：
+
+```json
+{
+  "status": "ready",
+  "human_market_task_spec": {
+    "task_id": "human_market_task_xxx",
+    "reward_rule": {
+      "threshold_score": 80,
+      "winner_count": 3,
+      "settlement_window_hours": 168,
+      "winner_shares": [0.5, 0.3, 0.2],
+      "settlement_policy": {
+        "eligible_condition": "final_score >= 80",
+        "winner_selection": "top 3 eligible miners by final_score, then earlier submission time",
+        "user_can_settle_when": "3 eligible miners are available",
+        "full_refund_if_eligible_winners_lt_y": true
+      }
+    }
+  }
+}
+```
+
+这个接口只 finalize 人工市场订单规则，不会执行 Dataset Miner / Debug Miner。后续前端可以拿 `human_market_task_spec` 生成 `taskURI/orderURI/criteriaHash`，再调用 Sepolia 合约 `createTask` 建人工任务奖池。
+
 ## 6. Dataset Miner 使用说明
 
 ### 6.1 支持输入

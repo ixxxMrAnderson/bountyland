@@ -7,6 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from aurora_agent_core.agents.human_market_task_spec_graph import HumanMarketTaskSpecGraph
 from aurora_agent_core.agents.task_intake_graph import TaskIntakeGraph
 from aurora_agent_core.runner import run_aurora_task
 
@@ -20,6 +21,15 @@ class IntakeRequest(BaseModel):
 
 class ExecuteRequest(IntakeRequest):
     output_dir: Optional[str] = None
+
+
+class HumanMarketSpecRequest(BaseModel):
+    user_input: str = Field(..., min_length=1)
+    spec_confirmed: bool = False
+    use_llm: bool = False
+    task_definition: Optional[dict[str, Any]] = None
+    validator_criteria: Optional[dict[str, Any]] = None
+    reward_rule: Optional[dict[str, Any]] = None
 
 
 app = FastAPI(
@@ -44,6 +54,11 @@ def execute(request: ExecuteRequest) -> dict[str, Any]:
     output_dir = Path(request.output_dir) if request.output_dir else None
     payload = request.model_dump(exclude={"output_dir"})
     return run_aurora_task(payload, output_dir=output_dir)
+
+
+@app.post("/v1/human-market/spec")
+def human_market_spec(request: HumanMarketSpecRequest) -> dict[str, Any]:
+    return HumanMarketTaskSpecGraph().run(request.model_dump())
 
 
 def main() -> None:
