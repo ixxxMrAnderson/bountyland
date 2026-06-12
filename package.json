@@ -12,6 +12,9 @@
     "contracts:test": "hardhat test",
     "contracts:deploy:sepolia": "hardhat run scripts/deploy-sepolia.cjs --network sepolia"
   },
+  "dependencies": {
+    "ethers": "^6.16.0"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "hardhat": "^2.22.19"

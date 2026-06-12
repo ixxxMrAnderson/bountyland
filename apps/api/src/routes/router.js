@@ -6,6 +6,7 @@ import {
   submitValidatorEvaluation,
   submitWorkerOutput
 } from "../services/taskService.js";
+import { listTaskSettlements, settleTask } from "../services/settlementService.js";
 
 export async function routeRequest(request) {
   const url = new URL(request.url, `http://${request.headers.host}`);
@@ -41,6 +42,16 @@ export async function routeRequest(request) {
   const evaluationMatch = url.pathname.match(/^\/tasks\/(\d+)\/evaluations$/);
   if (method === "POST" && evaluationMatch) {
     return ok(submitValidatorEvaluation(evaluationMatch[1], await readJson(request)), 201);
+  }
+
+  const settlementMatch = url.pathname.match(/^\/tasks\/(\d+)\/settle$/);
+  if (method === "POST" && settlementMatch) {
+    return ok(await settleTask(settlementMatch[1], await readJson(request)), 201);
+  }
+
+  const settlementsMatch = url.pathname.match(/^\/tasks\/(\d+)\/settlements$/);
+  if (method === "GET" && settlementsMatch) {
+    return ok({ settlements: listTaskSettlements(settlementsMatch[1]) });
   }
 
   return notFound();

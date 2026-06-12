@@ -2,7 +2,8 @@ const state = {
   nextTaskId: 1,
   tasks: new Map(),
   submissions: new Map(),
-  evaluations: new Map()
+  evaluations: new Map(),
+  settlements: new Map()
 };
 
 export function createTaskRecord(task) {
@@ -17,6 +18,7 @@ export function createTaskRecord(task) {
   state.tasks.set(taskId, record);
   state.submissions.set(taskId, []);
   state.evaluations.set(taskId, []);
+  state.settlements.set(taskId, []);
   return record;
 }
 
@@ -70,4 +72,30 @@ export function addEvaluation(taskId, evaluation) {
 
 export function listEvaluations(taskId) {
   return state.evaluations.get(Number(taskId)) || [];
+}
+
+export function addSettlement(taskId, settlement) {
+  const key = Number(taskId);
+  const settlements = state.settlements.get(key) || [];
+  const record = {
+    id: settlements.length + 1,
+    taskId: key,
+    createdAt: new Date().toISOString(),
+    ...settlement
+  };
+  settlements.push(record);
+  state.settlements.set(key, settlements);
+  const task = state.tasks.get(key);
+  if (task && settlement.status === "settled") {
+    task.status = "settled";
+    task.onchain = {
+      ...(task.onchain || {}),
+      ...(settlement.onchain || {})
+    };
+  }
+  return record;
+}
+
+export function listSettlements(taskId) {
+  return state.settlements.get(Number(taskId)) || [];
 }

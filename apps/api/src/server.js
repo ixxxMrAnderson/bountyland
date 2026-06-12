@@ -1,5 +1,8 @@
 import http from "node:http";
 import { routeRequest } from "./routes/router.js";
+import { loadRootEnv } from "./services/envService.js";
+
+loadRootEnv();
 
 const port = Number(process.env.API_PORT || 8787);
 

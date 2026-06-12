@@ -8,10 +8,14 @@ import {
   createTaskRecord,
   getTaskRecord,
   listEvaluations,
+  listSettlements,
   listSubmissions,
   listTaskRecords
 } from "../store/memoryStore.js";
 import { calculateFinalEvaluation } from "../../../../packages/shared/src/scoring.js";
+
+const DEMO_WORKER_ADDRESS = "0x0000000000000000000000000000000000001001";
+const DEMO_VALIDATOR_ADDRESS = "0x0000000000000000000000000000000000002001";
 
 export function proposeCriteria(taskInput) {
   return generateCriteriaOptions(taskInput);
@@ -51,7 +55,7 @@ export function getTask(taskId) {
 export function submitWorkerOutput(taskId, body) {
   assertTaskExists(taskId);
   return addSubmission(taskId, {
-    workerAddress: body.workerAddress || "0xworker",
+    workerAddress: body.workerAddress || DEMO_WORKER_ADDRESS,
     outputURI: body.outputURI || `memory://outputs/${sha256(body.outputText || "")}`,
     outputHash: `0x${sha256(body.outputText || body.outputURI || "")}`,
     outputText: body.outputText || ""
@@ -80,7 +84,7 @@ export function submitValidatorEvaluation(taskId, body) {
   return addEvaluation(taskId, {
     submissionId: submission.id,
     workerAddress: submission.workerAddress,
-    validatorAddress: body.validatorAddress || "0xvalidator",
+    validatorAddress: body.validatorAddress || DEMO_VALIDATOR_ADDRESS,
     validatorReason: body.reason || "",
     aiAudit,
     ...finalEvaluation
@@ -99,6 +103,7 @@ function withChildren(task) {
   return {
     ...task,
     submissions: listSubmissions(task.id),
-    evaluations: listEvaluations(task.id)
+    evaluations: listEvaluations(task.id),
+    settlements: listSettlements(task.id)
   };
 }
