@@ -60,8 +60,9 @@ import {
 } from './types';
 
 import { useTranslation, getLocalizedTask, getLocalizedTaskTitle, getLocalizedCriteria } from './locales';
-import { intakeDebug, executeDebug } from './services/agentApi';
+import { intakeDebug, executeDebug, getArtifactDownloadUrl, fetchArtifactContent } from './services/agentApi';
 import type { ExecuteResponse } from './services/agentApi';
+import JSZip from 'jszip';
 import { connectWallet, disconnectWallet, refreshBalance, onAccountsChanged, onChainChanged } from './services/walletService';
 import { createTaskOnChain } from './services/contractService';
 import type { CreateTaskResult } from './services/contractService';
@@ -288,6 +289,8 @@ export default function App() {
   const [agentError, setAgentError] = useState<string | null>(null);
   const [agentMissingFields, setAgentMissingFields] = useState<string[]>([]);
   const [agentMessage, setAgentMessage] = useState<string | null>(null);
+  const [reportContent, setReportContent] = useState<string | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   // Self-created task warrant management
   const [modifyingTask, setModifyingTask] = useState<Task | null>(null);
@@ -557,14 +560,21 @@ export default function App() {
     const userInput = buildDebugUserInput();
     const bounty = parseFloat(web3Bounty) || 0.15;
 
+    console.group('%c🔧 [Agent Flow] handleAgentDeploy', 'color: #dfab6c; font-weight: bold; font-size: 14px');
+    console.log('%c📋 userInput:', 'color: #ebdcb9', userInput);
+    console.log('%c💰 bounty:', 'color: #ebdcb9', bounty, 'ETH');
+
     // Reset previous state
     setContractResult(null);
     setAgentResult(null);
     setAgentError(null);
     setAgentMissingFields([]);
     setAgentMessage(null);
+    setReportContent(null);
+    setReportLoading(false);
 
     // ── Phase 0: On-chain escrow ──
+    console.log('%c📡 Phase 0: Deploying contract...', 'color: #dfab6c');
     setFormSubmittingStage('deploying_contract');
 
     // Build contract parameters from form data
@@ -593,6 +603,7 @@ export default function App() {
       });
 
       setContractResult(chainResult);
+      console.log('%c✅ Contract deployed:', 'color: #849c44', chainResult);
       triggerAlarm(
         'success',
         locale === 'zh'
@@ -613,6 +624,7 @@ export default function App() {
     }
 
     // ── Phase 1: Agent intake ──
+    console.log('%c🤖 Phase 1: Calling agent intake...', 'color: #dfab6c');
     setFormSubmittingStage('agent_intake');
     try {
       const intake = await intakeDebug(userInput);
@@ -630,6 +642,7 @@ export default function App() {
       }
 
       // Phase 2 — execute
+      console.log('%c⚡ Phase 2: Calling agent execute...', 'color: #849c44');
       setFormSubmittingStage('agent_executing');
       const result = await executeDebug({
         userInput,
@@ -637,6 +650,12 @@ export default function App() {
       });
 
       setAgentResult(result);
+      console.log('%c✅ Agent result received:', 'color: #849c44', {
+        'intake.status': result.intake?.status,
+        'execution.status': result.execution?.status,
+        'execution.summary': result.execution?.summary,
+        'artifacts': result.execution?.artifacts?.length,
+      });
 
       // If execute failed (intake said not ready even with price_confirmed)
       if (!result.execution) {
@@ -726,7 +745,25 @@ export default function App() {
       );
 
       setFormSubmittingStage('completed_download');
+      console.log('%c🏁 Flow complete → completed_download', 'color: #849c44');
+      console.groupEnd();
+
+      // Fetch the debug report content for inline display
+      const artifacts = result.execution.artifacts || [];
+      const reportArtifact = artifacts.find((a: any) => a.type === 'debug_report');
+      if (reportArtifact?.path) {
+        const taskIdMatch = reportArtifact.path.match(/(task_\w+)/);
+        if (taskIdMatch) {
+          setReportLoading(true);
+          fetchArtifactContent(taskIdMatch[1], 'debug_report.md')
+            .then((content) => setReportContent(content))
+            .catch(() => setReportContent(null))
+            .finally(() => setReportLoading(false));
+        }
+      }
     } catch (err: any) {
+      console.log('%c❌ Agent flow error:', 'color: #bf311d', err?.message || err);
+      console.groupEnd();
       setAgentError(err?.message || String(err));
       triggerAlarm('error', locale === 'zh' ? `Agent 调用失败: ${err?.message || '未知错误'}` : `Agent call failed: ${err?.message || 'Unknown error'}`);
       setFormSubmittingStage('proposal_ready');
@@ -2113,51 +2150,117 @@ export default function App() {
                             )}
 
                             {/* Artifacts */}
-                            {agentResult.execution.artifacts && agentResult.execution.artifacts.length > 0 && (
-                              <div className="bg-[#150f0c] border border-[#849c44]/30 p-4 rounded space-y-3">
-                                <h5 className="font-mono text-[10px] text-[#849c44] uppercase font-black tracking-wider">
-                                  {locale === 'zh' ? '▎Agent 产物列表' : '▎AGENT ARTIFACTS'}
-                                </h5>
-                                <div className="space-y-2">
-                                  {agentResult.execution.artifacts.map((artifact, idx) => {
-                                    const typeLabel: Record<string, string> = {
-                                      debug_report: locale === 'zh' ? '调试报告' : 'Debug Report',
-                                      repo_context: locale === 'zh' ? '仓库上下文' : 'Repo Context',
-                                      runtime: locale === 'zh' ? '运行时日志' : 'Runtime Log',
-                                      trace: locale === 'zh' ? '执行追踪' : 'Execution Trace',
-                                      patch: locale === 'zh' ? '补丁文件' : 'Patch Diff',
-                                      modified_repo: locale === 'zh' ? '修改后仓库' : 'Modified Repo',
-                                    };
-                                    return (
-                                      <div key={idx} className="bg-[#0b0705] border border-[#4a3427]/50 p-3 rounded flex items-center justify-between">
-                                        <div className="flex items-center gap-2.5">
-                                          {artifact.type === 'debug_report' && <FileText className="w-4 h-4 text-[#dfab6c]" />}
-                                          {artifact.type === 'patch' && <FileText className="w-4 h-4 text-[#849c44]" />}
-                                          {artifact.type === 'modified_repo' && <FileArchive className="w-4 h-4 text-[#dfab6c]" />}
-                                          {artifact.type === 'runtime' && <Cpu className="w-4 h-4 text-[#8e7564]" />}
-                                          {artifact.type === 'trace' && <Bot className="w-4 h-4 text-[#8e7564]" />}
-                                          {artifact.type === 'repo_context' && <FileText className="w-4 h-4 text-[#8e7564]" />}
-                                          <div>
-                                            <span className="text-[11px] text-[#ebdcb9] font-mono font-bold block">
-                                              {typeLabel[artifact.type] || artifact.type}
-                                            </span>
-                                            <span className="text-[9px] text-[#8e7564] font-mono">{artifact.path}</span>
-                                          </div>
+                            {/* ── Downloads ── */}
+                            {(() => {
+                              const artifacts = agentResult.execution.artifacts || [];
+                              const taskIdMatch = artifacts[0]?.path?.match(/(task_\w+)/);
+                              const taskId = taskIdMatch ? taskIdMatch[1] : null;
+
+                              const handleDownloadSingle = (artifact: any) => {
+                                const fnMatch = artifact.path?.match(/[^/]+$/);
+                                const filename = fnMatch ? fnMatch[0] : artifact.type;
+                                if (!taskId) return;
+                                const a = document.createElement('a');
+                                a.href = getArtifactDownloadUrl(taskId, filename);
+                                a.download = filename;
+                                a.click();
+                              };
+
+                              const handleDownloadAllZip = async () => {
+                                if (!taskId) return;
+                                const zip = new JSZip();
+                                const artifactList = artifacts as any[];
+                                for (const a of artifactList) {
+                                  const fnMatch = a.path?.match(/[^/]+$/);
+                                  const filename = fnMatch ? fnMatch[0] : a.type;
+                                  try {
+                                    const content = await fetchArtifactContent(taskId, filename);
+                                    zip.file(filename, content);
+                                  } catch { /* skip if can't fetch */ }
+                                }
+                                const blob = await zip.generateAsync({ type: 'blob' });
+                                const url = URL.createObjectURL(blob);
+                                const anchor = document.createElement('a');
+                                anchor.href = url;
+                                anchor.download = `aurora_debug_${taskId}.zip`;
+                                anchor.click();
+                                URL.revokeObjectURL(url);
+                              };
+
+                              return (
+                                <div className="space-y-4">
+                                  {/* Download buttons */}
+                                  <div className="flex gap-3">
+                                    {taskId && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDownloadSingle(artifacts.find((a: any) => a.type === 'debug_report') || artifacts[0])}
+                                          className="flex-1 py-2 bg-[#dfab6c] hover:bg-[#ebdcb9] text-[#150f0c] font-serif font-black text-xs uppercase tracking-wider rounded flex items-center justify-center gap-2 transition"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                          <span>{locale === 'zh' ? '下载诊断报告 (.md)' : 'Download Report (.md)'}</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={handleDownloadAllZip}
+                                          className="flex-1 py-2 bg-[#849c44] hover:bg-[#9ab458] text-[#150f0c] font-serif font-black text-xs uppercase tracking-wider rounded flex items-center justify-center gap-2 transition"
+                                        >
+                                          <FileArchive className="w-4 h-4" />
+                                          <span>{locale === 'zh' ? '下载全部产物 (.zip)' : 'Download All (.zip)'}</span>
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* Bug log — debug report inline */}
+                                  <div className="bg-[#150f0c] border border-[#4a3427] rounded overflow-hidden">
+                                    <div className="bg-[#1c1310] px-4 py-2.5 border-b border-[#4a3427] flex items-center justify-between">
+                                      <h5 className="font-mono text-[10px] text-[#dfab6c] uppercase font-black tracking-wider flex items-center gap-2">
+                                        <FileText className="w-3.5 h-3.5" />
+                                        {locale === 'zh' ? 'Bug 诊断日志' : 'Bug Diagnosis Log'}
+                                      </h5>
+                                      <span className="text-[8px] text-[#8e7564] font-mono uppercase">
+                                        {agentResult.execution.artifacts?.find((a: any) => a.type === 'debug_report')?.path?.match(/[^/]+$/)?.[0] || 'debug_report.md'}
+                                      </span>
+                                    </div>
+                                    <div className="p-4 max-h-96 overflow-y-auto">
+                                      {reportLoading ? (
+                                        <div className="flex items-center gap-2 text-[10px] text-[#8e7564] font-mono animate-pulse">
+                                          <Bot className="w-4 h-4 text-[#dfab6c] animate-spin" />
+                                          {locale === 'zh' ? '正在加载诊断报告...' : 'Loading diagnosis report...'}
                                         </div>
-                                        <span className="text-[9px] px-2 py-0.5 bg-black/30 rounded font-mono text-[#8e7564] uppercase">
-                                          {artifact.type}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
+                                      ) : reportContent ? (
+                                        <pre className="text-[10px] text-[#ebdcb9]/90 font-mono leading-relaxed whitespace-pre-wrap break-words">{reportContent}</pre>
+                                      ) : (
+                                        <p className="text-[10px] text-[#8e7564] font-mono text-center py-4">
+                                          {locale === 'zh' ? '无法加载诊断报告内容' : 'Unable to load diagnosis report'}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Compact artifact list */}
+                                  <div className="flex flex-wrap gap-2">
+                                    {artifacts.map((artifact: any, idx: number) => {
+                                      const fnMatch = artifact.path?.match(/[^/]+$/);
+                                      const filename = fnMatch ? fnMatch[0] : artifact.type;
+                                      return (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() => handleDownloadSingle(artifact)}
+                                          className="text-[9px] font-mono bg-[#0b0705] border border-[#4a3427]/50 hover:border-[#dfab6c]/50 px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer text-[#8e7564] hover:text-[#ebdcb9]"
+                                        >
+                                          <ArrowDownToLine className="w-3 h-3 text-[#dfab6c]" />
+                                          {filename}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                                <p className="text-[9px] text-[#8e7564] font-mono pt-1">
-                                  {locale === 'zh'
-                                    ? '产物位于后端 artifacts 目录，可通过后续 /v1/artifacts 端点下载。'
-                                    : 'Artifacts are on the backend. Download via /v1/artifacts endpoint (coming soon).'}
-                                </p>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         )}
 
