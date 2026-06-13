@@ -24,6 +24,7 @@ import fantasyAvatar from '../../../../img/agent_avatar_fantasy.png';
 import matrixAvatar from '../../../../img/agent_avatar_matrix.png';
 import cyberpunkAvatar from '../../../../img/agent_avatar_cyberpunk.png';
 import mysteryAvatar from '../../../../img/agent_avatar_mystery.png';
+import debugAgentFlow from '../../../../img/agent_flow.png';
 
 interface AgentReview {
   id: string;
@@ -72,11 +73,11 @@ export const PlatformAgents: React.FC = () => {
   const platformAgents: AgentInfo[] = [
     {
       id: 'web3-debug',
-      name: 'Platform Debug Killer',
+      name: 'Debug Killer',
       zhName: 'Web3 调试/审计终结者',
       avatar: matrixAvatar,
       avatarTone: 'from-[#021911]/10 via-[#123d2d]/20 to-[#09100d]/70',
-      model: 'GLM-4.5 Flash · Dual Sandbox',
+      model: 'GLM-5.1',
       rating: 4.8,
       reputation: 'Hall of Fame',
       zhReputation: '名人堂荣誉殿堂级',
@@ -115,7 +116,7 @@ export const PlatformAgents: React.FC = () => {
     },
     {
       id: 'dataset-mining',
-      name: 'Platform Data Mining Agent',
+      name: 'Data Mining Agent',
       zhName: '算力数据集智能发掘代理',
       avatar: cyberpunkAvatar,
       avatarTone: 'from-[#361149]/10 via-[#009fc9]/20 to-[#130616]/70',
@@ -157,7 +158,7 @@ export const PlatformAgents: React.FC = () => {
     },
     {
       id: 'spec-agent',
-      name: 'Platform Spec Agent',
+      name: 'Spec Agent',
       zhName: '契约规格定制共签代理',
       avatar: fantasyAvatar,
       avatarTone: 'from-[#4d2c08]/10 via-[#17405f]/20 to-[#100704]/70',
@@ -312,8 +313,12 @@ export const PlatformAgents: React.FC = () => {
           return (
             <div 
               key={agent.id}
-              className="bg-[#150f0c] border-2 border-[#4a3427] hover:border-[#dfab6c]/70 transition-all duration-300 rounded px-5 py-5 min-h-[430px] flex flex-col justify-between group relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/20 cursor-pointer shadow-[0_20px_54px_rgba(0,0,0,0.28)]"
-              onClick={() => openDossier(agent)}
+              className={`bg-[#150f0c] border-2 border-[#4a3427] transition-all duration-300 rounded px-5 py-5 min-h-[430px] flex flex-col justify-between relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/20 shadow-[0_20px_54px_rgba(0,0,0,0.28)] ${
+                isDebutSlot
+                  ? 'cursor-default'
+                  : 'group cursor-pointer hover:border-[#dfab6c]/70'
+              }`}
+              onClick={isDebutSlot ? undefined : () => openDossier(agent)}
             >
               {/* Ornaments */}
               <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/50 select-none">✦</div>
@@ -350,7 +355,7 @@ export const PlatformAgents: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-serif font-black text-[16px] leading-tight text-[#ebdcb9] group-hover:text-[#dfab6c] transition duration-200 uppercase">
+                    <h3 className="font-sans text-[15px] font-semibold leading-tight tracking-[0.08em] text-[#ebdcb9] group-hover:text-[#dfab6c] transition duration-200 uppercase">
                       {locale === 'zh' ? agent.zhName : agent.name}
                     </h3>
                     <p className="font-mono text-[10px] text-[#8e7564] mt-1.5">
@@ -371,10 +376,12 @@ export const PlatformAgents: React.FC = () => {
                   {isDebutSlot ? (locale === 'zh' ? '首秀席位开放中' : 'debut slot open') : `💼 ${agent.completedContracts} ${locale === 'zh' ? '笔在册计算订单' : 'contracts solved'}`}
                 </span>
                 
-                <div className="flex items-center gap-1 text-[#dfab6c] font-bold group-hover:translate-x-1.5 transition-transform duration-200">
-                  <span>{locale === 'zh' ? '检阅案卷' : 'Inspect Dossier'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-[#dfab6c]" />
-                </div>
+                {!isDebutSlot && (
+                  <div className="flex items-center gap-1 text-[#dfab6c] font-bold group-hover:translate-x-1.5 transition-transform duration-200">
+                    <span>{locale === 'zh' ? '详情&评价' : 'Details & Reviews'}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#dfab6c]" />
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -388,7 +395,7 @@ export const PlatformAgents: React.FC = () => {
           onClick={closeDossier}
         >
           <div 
-            className="bg-[#150f0c] border-2 border-[#4a3427] rounded w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/30 animate-scale-up text-left"
+            className={`bg-[#150f0c] border-2 border-[#4a3427] rounded w-full ${selectedAgent.id === 'web3-debug' ? 'max-w-5xl' : 'max-w-3xl'} max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden outline outline-1 outline-offset-4 outline-[#4a3427]/30 animate-scale-up text-left`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top decorative line */}
@@ -431,40 +438,49 @@ export const PlatformAgents: React.FC = () => {
             {/* Scrollable Body */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[#150f0c] scrollbar-thin">
               
-              {/* Specs and Capabilities */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
-                {/* Engine Architecture */}
-                <div className="bg-[#1b120e] border border-[#4a3427]/60 p-4 rounded-sm space-y-3">
-                  <h4 className="font-serif font-black text-xs uppercase tracking-wide text-[#dfab6c] flex items-center gap-1.5 border-b border-[#4a3427]/50 pb-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-[#dfab6c]" />
-                    {locale === 'zh' ? '机件底层架构' : 'ENGINE COGNITION ARCHITECTURE'}
-                  </h4>
-                  <ul className="space-y-2 text-[10.5px] text-[#ebdcb9]/90 font-mono">
-                    {(locale === 'zh' ? selectedAgent.zhArchitecture : selectedAgent.architecture).map((spec, i) => (
-                      <li key={i} className="flex items-start gap-2 leading-relaxed">
-                        <span className="text-[#dfab6c] shrink-0">▸</span>
-                        <span>{spec}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {selectedAgent.id === 'web3-debug' ? (
+                <div className="bg-[#1b120e] border border-[#4a3427]/60 p-3 rounded-sm pb-2">
+                  <img
+                    src={debugAgentFlow}
+                    alt="Debug killer agent workflow"
+                    className="w-full rounded-sm border border-[#4a3427]/50 bg-[#120b08] object-contain"
+                  />
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                  {/* Engine Architecture */}
+                  <div className="bg-[#1b120e] border border-[#4a3427]/60 p-4 rounded-sm space-y-3">
+                    <h4 className="font-serif font-black text-xs uppercase tracking-wide text-[#dfab6c] flex items-center gap-1.5 border-b border-[#4a3427]/50 pb-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-[#dfab6c]" />
+                      {locale === 'zh' ? '机件底层架构' : 'ENGINE COGNITION ARCHITECTURE'}
+                    </h4>
+                    <ul className="space-y-2 text-[10.5px] text-[#ebdcb9]/90 font-mono">
+                      {(locale === 'zh' ? selectedAgent.zhArchitecture : selectedAgent.architecture).map((spec, i) => (
+                        <li key={i} className="flex items-start gap-2 leading-relaxed">
+                          <span className="text-[#dfab6c] shrink-0">▸</span>
+                          <span>{spec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-                {/* Cognitive Capabilities */}
-                <div className="bg-[#1b120e] border border-[#4a3427]/60 p-4 rounded-sm space-y-3">
-                  <h4 className="font-serif font-black text-xs uppercase tracking-wide text-[#dfab6c] flex items-center gap-1.5 border-b border-[#4a3427]/50 pb-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#dfab6c]" />
-                    {locale === 'zh' ? '核心履约/审计特权' : 'CONTRACT COMPLIANCE PRIVILEGES'}
-                  </h4>
-                  <ul className="space-y-2 text-[10.5px] text-[#ebdcb9]/90 font-mono">
-                    {(locale === 'zh' ? selectedAgent.zhCapabilities : selectedAgent.capabilities).map((cap, i) => (
-                      <li key={i} className="flex items-start gap-2 leading-relaxed">
-                        <span className="text-[#849c44] shrink-0">✔</span>
-                        <span>{cap}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Cognitive Capabilities */}
+                  <div className="bg-[#1b120e] border border-[#4a3427]/60 p-4 rounded-sm space-y-3">
+                    <h4 className="font-serif font-black text-xs uppercase tracking-wide text-[#dfab6c] flex items-center gap-1.5 border-b border-[#4a3427]/50 pb-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#dfab6c]" />
+                      {locale === 'zh' ? '核心履约/审计特权' : 'CONTRACT COMPLIANCE PRIVILEGES'}
+                    </h4>
+                    <ul className="space-y-2 text-[10.5px] text-[#ebdcb9]/90 font-mono">
+                      {(locale === 'zh' ? selectedAgent.zhCapabilities : selectedAgent.capabilities).map((cap, i) => (
+                        <li key={i} className="flex items-start gap-2 leading-relaxed">
+                          <span className="text-[#849c44] shrink-0">✔</span>
+                          <span>{cap}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Service Completion History - WANTED ORDERS */}
               <div className="space-y-3.5">

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Award, FileCode, Lightbulb, Shield, Send } from 'lucide-react';
+import { X, Award, FileCode, Lightbulb, Send } from 'lucide-react';
 import { Task } from '../types';
 import { generateHash } from '../mockData';
 import { useTranslation } from '../locales';
@@ -238,11 +238,7 @@ export const MinerPanel: React.FC<MinerPanelProps> = ({
               )}
 
               {/* Actions submission bar */}
-              <div className="pt-4 border-t border-slate-850 shrink-0 flex items-center justify-between gap-4">
-                <div className="text-[10px] text-slate-500 flex items-center gap-1.5 leading-snug max-w-[260px]">
-                  <Shield className="w-3.5 h-3.5 text-brand-indigo shrink-0" />
-                  {t('sandboxYards')}
-                </div>
+              <div className="pt-4 border-t border-slate-850 shrink-0 flex items-center justify-end gap-4">
                 <button
                   type="submit"
                   disabled={isSubmitting || !content.trim()}

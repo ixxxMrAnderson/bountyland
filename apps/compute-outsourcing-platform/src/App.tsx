@@ -60,6 +60,9 @@ import {
 
 import { useTranslation, getLocalizedTask, getLocalizedTaskTitle, getLocalizedCriteria } from './locales';
 import introBackground from '../../../img/intro_page_concept.png';
+import debugAgentAvatar from '../../../img/agent_avatar_matrix.png';
+import dataAgentAvatar from '../../../img/agent_avatar_cyberpunk.png';
+import specAgentAvatar from '../../../img/agent_avatar_fantasy.png';
 
 interface IntroLandingProps {
   locale: 'en' | 'zh';
@@ -1155,6 +1158,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={debugAgentAvatar} alt="Debug Killer" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1165,7 +1171,7 @@ export default function App() {
                             </span>
                           </div>
                           <div className="text-[9.5px] font-mono text-[#dfab6c] font-black uppercase tracking-wider">
-                            Platform Debug Agent · GLM-4.5 Flash · Rating 4.8/5
+                            Debug Killer · GLM-5.1 · Rating 4.8/5
                           </div>
                           <p className="text-[11px] text-[#a58d7c] leading-relaxed font-sans select-none">
                             {locale === 'zh' 
@@ -1188,6 +1194,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={dataAgentAvatar} alt="Data Mining Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1220,6 +1229,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1267,13 +1279,15 @@ export default function App() {
                     {/* Sub-form Header */}
                     <div className="bg-[#1c1310] border-2 border-[#4a3427] px-5 py-4 rounded-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">🛡️</div>
+                        <div className="h-14 w-12 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={debugAgentAvatar} alt="Debug Killer" className="h-full w-full object-cover" />
+                        </div>
                         <div>
                           <h3 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
                             {locale === 'zh' ? 'WEB3 开发漏洞审计调试契约构建器' : 'Web3 Contract Debug Pact Creator'}
                           </h3>
                           <p className="text-[10px] font-mono text-[#dfab6c] uppercase">
-                            Manned by: Platform Debug Agent · GLM-4.5 Flash Dual Sandbox
+                            Manned by: Debug Killer · GLM-5.1
                           </p>
                         </div>
                       </div>
@@ -1752,7 +1766,9 @@ export default function App() {
                     {/* Sub-form Header */}
                     <div className="bg-[#1c1310] border-2 border-[#4a3427] px-5 py-4 rounded-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">⛏️</div>
+                        <div className="h-14 w-12 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={dataAgentAvatar} alt="Data Mining Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div>
                           <h3 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
                             {locale === 'zh' ? '分布式算力数据集搜集发掘契约构建器' : 'Dataset Custom Outsource Pact Creator'}
@@ -2235,8 +2251,8 @@ export default function App() {
                     {/* Chat log thread bubble containers */}
                     {chatMessages.length === 0 ? (
                       <div className="flex-1 flex flex-col justify-center items-center text-center py-10 space-y-4">
-                        <div className="w-12 h-12 rounded bg-[#201511] border border-[#4a3427] flex items-center justify-center text-[#dfab6c] text-xl">
-                          📜
+                        <div className="h-16 w-14 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
                         </div>
                         <div className="space-y-1.5 max-w-sm">
                           <h4 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
@@ -2300,12 +2316,14 @@ export default function App() {
                               msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
                             }`}
                           >
-                            <div className={`w-7 h-7 rounded-sm shrink-0 flex items-center justify-center font-mono text-[10px] ${
+                            <div className={`w-7 h-7 rounded-sm shrink-0 flex items-center justify-center overflow-hidden font-mono text-[10px] ${
                               msg.sender === 'user' 
                                 ? 'bg-[#4a3427] text-[#dfab6c] border border-[#dfab6c]/20' 
                                 : 'bg-[#150f0c] text-[#ebdcb9] border border-[#4a3427]'
                             }`}>
-                              {msg.sender === 'user' ? '★' : '📜'}
+                              {msg.sender === 'user' ? '★' : (
+                                <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
+                              )}
                             </div>
 
                             <div className={`p-4 rounded border text-xs leading-relaxed space-y-3 ${
@@ -2657,8 +2675,6 @@ export default function App() {
         );
       })()}
 
-        </>
-      )}
     </div>
   );
 }
