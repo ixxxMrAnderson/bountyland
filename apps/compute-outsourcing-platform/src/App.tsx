@@ -63,6 +63,9 @@ import { intakeDebug, executeDebug } from './services/agentApi';
 import type { ExecuteResponse } from './services/agentApi';
 import { connectWallet, disconnectWallet, refreshBalance, onAccountsChanged, onChainChanged } from './services/walletService';
 import introBackground from '../../../img/intro_page_concept.png';
+import debugAgentAvatar from '../../../img/agent_avatar_matrix.png';
+import dataAgentAvatar from '../../../img/agent_avatar_cyberpunk.png';
+import specAgentAvatar from '../../../img/agent_avatar_fantasy.png';
 
 interface IntroLandingProps {
   locale: 'en' | 'zh';
@@ -71,6 +74,11 @@ interface IntroLandingProps {
 }
 
 const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLanguage }) => {
+  const [showAbout, setShowAbout] = useState(false);
+  const aboutText = locale === 'zh'
+    ? '在十九世纪的美国大西部，Bounty Land 是悬赏令、赏金猎手、职业杀手和执法者交汇的地方：有人挂出通缉与赎金，有人接下追捕与清算，执法部门负责监督秩序。在我们的项目里，每一张悬赏令都是一个计算任务。用户既可以调用平台提供的职业杀手 Agent 直接解决任务，也可以把任务发布到公开市场，让其他人工用户接单、提交结果并领取奖励；验证者则像执法部门一样审查工作，保证最终结算可信。'
+    : 'On the 19th-century American frontier, Bounty Land was where wanted posters, reward money, bounty hunters, hired killers, and law enforcement met: someone posted the bounty, someone tracked the target, and sheriffs kept order. In our project, each wanted poster becomes a compute task. Users can ask platform-provided killer agents to solve the job directly, or post the bounty to the open market so human workers can take it, submit results, and earn rewards, while validators act as law enforcement to review the work and keep settlement fair.';
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080504] text-[#f4e5c3]">
       <div
@@ -97,6 +105,7 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
           <div className="mt-14 flex flex-col items-center justify-center gap-8 sm:flex-row sm:gap-36">
             <button
               type="button"
+              onClick={() => setShowAbout(true)}
               className="h-8 min-w-24 border border-[#e0ad71]/20 bg-[#130b08]/28 px-5 text-center font-display text-[8px] font-normal uppercase tracking-[0.46em] text-[#e7bd7d]/48 transition hover:border-[#f0c384]/55 hover:bg-[#21140f]/45 hover:text-[#f0c384]/78"
             >
               About
@@ -114,6 +123,42 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
           </div>
         </div>
       </section>
+
+      {showAbout && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-[#050302]/35 px-6 backdrop-blur-[2px]"
+          onClick={() => setShowAbout(false)}
+        >
+          <div
+            className="relative w-full max-w-2xl border border-[#e0ad71]/20 bg-[#100806]/45 px-7 py-7 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:px-9 sm:py-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowAbout(false)}
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-[#e0ad71]/18 bg-[#160d09]/35 text-[#f3d4a0]/50 transition hover:border-[#f3d4a0]/45 hover:text-[#f3d4a0]/80"
+              aria-label={locale === 'zh' ? '关闭介绍' : 'Close about'}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="mb-5 h-px w-20 bg-[#c43b25]/55" />
+            <h2 className="mb-5 font-sans text-sm font-semibold uppercase tracking-[0.34em] text-[#f3d4a0]/68">
+              {locale === 'zh' ? 'About BountyLand' : 'About BountyLand'}
+            </h2>
+            <p
+              className="select-text text-[12.5px] leading-7 text-[#f6dfb5]/58 sm:text-[13.5px] sm:leading-8"
+              style={{
+                fontFamily: locale === 'zh'
+                  ? '"KaiTi", "STKaiti", "Kaiti SC", "楷体", serif'
+                  : '"Times New Roman", Times, serif',
+                letterSpacing: locale === 'zh' ? '0.08em' : '0.045em',
+              }}
+            >
+              {aboutText}
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
@@ -1397,6 +1442,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={debugAgentAvatar} alt="Debug Killer" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1407,7 +1455,7 @@ export default function App() {
                             </span>
                           </div>
                           <div className="text-[9.5px] font-mono text-[#dfab6c] font-black uppercase tracking-wider">
-                            Platform Debug Agent · GLM-4.5 Flash · Rating 4.8/5
+                            Debug Killer · GLM-5.1 · Rating 4.8/5
                           </div>
                           <p className="text-[11px] text-[#a58d7c] leading-relaxed font-sans select-none">
                             {locale === 'zh' 
@@ -1430,6 +1478,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={dataAgentAvatar} alt="Data Mining Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1462,6 +1513,9 @@ export default function App() {
                         className="w-full text-left bg-[#150f0c] border-2 border-[#4a3427] p-5 rounded hover:border-[#dfab6c]/70 hover:bg-[#19120e] cursor-pointer transition-all duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative group outline outline-1 outline-offset-4 outline-[#4a3427]/15"
                       >
                         <div className="absolute top-1 left-1 text-[8px] font-serif text-[#4a3427]/40 select-none">✦</div>
+                        <div className="h-20 w-16 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[13.5px] font-serif font-black text-[#ebdcb9] group-hover:text-[#dfab6c] transition uppercase tracking-wide">
@@ -1509,13 +1563,15 @@ export default function App() {
                     {/* Sub-form Header */}
                     <div className="bg-[#1c1310] border-2 border-[#4a3427] px-5 py-4 rounded-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">🛡️</div>
+                        <div className="h-14 w-12 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={debugAgentAvatar} alt="Debug Killer" className="h-full w-full object-cover" />
+                        </div>
                         <div>
                           <h3 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
                             {locale === 'zh' ? 'WEB3 开发漏洞审计调试契约构建器' : 'Web3 Contract Debug Pact Creator'}
                           </h3>
                           <p className="text-[10px] font-mono text-[#dfab6c] uppercase">
-                            Manned by: Platform Debug Agent · GLM-4.5 Flash Dual Sandbox
+                            Manned by: Debug Killer · GLM-5.1
                           </p>
                         </div>
                       </div>
@@ -2191,7 +2247,9 @@ export default function App() {
                     {/* Sub-form Header */}
                     <div className="bg-[#1c1310] border-2 border-[#4a3427] px-5 py-4 rounded-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">⛏️</div>
+                        <div className="h-14 w-12 shrink-0 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={dataAgentAvatar} alt="Data Mining Agent" className="h-full w-full object-cover" />
+                        </div>
                         <div>
                           <h3 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
                             {locale === 'zh' ? '分布式算力数据集搜集发掘契约构建器' : 'Dataset Custom Outsource Pact Creator'}
@@ -2674,8 +2732,8 @@ export default function App() {
                     {/* Chat log thread bubble containers */}
                     {chatMessages.length === 0 ? (
                       <div className="flex-1 flex flex-col justify-center items-center text-center py-10 space-y-4">
-                        <div className="w-12 h-12 rounded bg-[#201511] border border-[#4a3427] flex items-center justify-center text-[#dfab6c] text-xl">
-                          📜
+                        <div className="h-16 w-14 overflow-hidden border border-[#4a3427] bg-[#201511] shadow-inner">
+                          <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
                         </div>
                         <div className="space-y-1.5 max-w-sm">
                           <h4 className="font-serif font-black text-sm text-[#ebdcb9] uppercase tracking-wider">
@@ -2739,12 +2797,14 @@ export default function App() {
                               msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
                             }`}
                           >
-                            <div className={`w-7 h-7 rounded-sm shrink-0 flex items-center justify-center font-mono text-[10px] ${
+                            <div className={`w-7 h-7 rounded-sm shrink-0 flex items-center justify-center overflow-hidden font-mono text-[10px] ${
                               msg.sender === 'user' 
                                 ? 'bg-[#4a3427] text-[#dfab6c] border border-[#dfab6c]/20' 
                                 : 'bg-[#150f0c] text-[#ebdcb9] border border-[#4a3427]'
                             }`}>
-                              {msg.sender === 'user' ? '★' : '📜'}
+                              {msg.sender === 'user' ? '★' : (
+                                <img src={specAgentAvatar} alt="Spec Agent" className="h-full w-full object-cover" />
+                              )}
                             </div>
 
                             <div className={`p-4 rounded border text-xs leading-relaxed space-y-3 ${
