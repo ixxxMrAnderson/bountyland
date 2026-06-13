@@ -79,6 +79,37 @@ interface IntroLandingProps {
   onToggleLanguage: () => void;
 }
 
+const SPEC_PRIMARY_OPTION_IDS = new Set([
+  'sec-heavy',
+  'reasoning-heavy',
+  'char-correctness',
+  'default-coherence'
+]);
+
+const isPrimarySpecOption = (option: CriteriaOption) => SPEC_PRIMARY_OPTION_IDS.has(option.id);
+
+const getSpecCriteriaOptionDisplay = (option: CriteriaOption, locale: 'en' | 'zh'): CriteriaOption => {
+  const isPrimary = isPrimarySpecOption(option);
+
+  if (isPrimary) {
+    return {
+      ...option,
+      name: locale === 'zh' ? '交付证据完整度审计' : 'Evidence Completeness & Delivery Traceability',
+      description: locale === 'zh'
+        ? '聚焦成果是否可复现、证据链是否完整、来源/日志/版本与交付物是否能被验证者直接复核，权重落在可交付性与审计追踪。'
+        : 'Audits reproducibility, evidence chain completeness, source/log/version traceability, and whether validators can directly verify the delivered artifact.'
+    };
+  }
+
+  return {
+    ...option,
+    name: locale === 'zh' ? '格式边界与解析稳定性' : 'Format Boundary & Parser Stability',
+    description: locale === 'zh'
+      ? '高宽容边缘场景覆盖规则，注重多轮思维推理的连贯、输出结构的严格对账和 JSONL/Markdown 等格式的稳定解析。'
+      : 'Prioritizes edge-case coverage, coherent reasoning across turns, strict output-structure reconciliation, and stable parsing for JSONL/Markdown artifacts.'
+  };
+};
+
 const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLanguage }) => {
   const [showAbout, setShowAbout] = useState(false);
   const aboutText = locale === 'zh'
@@ -917,8 +948,9 @@ export default function App() {
       return updated;
     });
 
-    const enMeSelect = `I choose Option: ${option.name}`;
-    const zhMeSelect = `我选择验收标准指标：${locale === 'zh' ? (option.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计') : option.name}`;
+    const displayOption = getSpecCriteriaOptionDisplay(option, locale);
+    const enMeSelect = `I choose Option: ${displayOption.name}`;
+    const zhMeSelect = `我选择验收标准指标：${displayOption.name}`;
     
     setChatMessages((prev) => [
       ...prev,
@@ -932,7 +964,7 @@ export default function App() {
     setTimeout(() => {
       const reward = 0.120;
       const deposit = 0.120;
-      const passScore = option.id.includes('correctness') ? 80 : 72;
+      const passScore = isPrimarySpecOption(option) ? 80 : 72;
 
       const enAgentText = `Excellent choice. I compiled your request into a ready-to-sign Smart Contract Computation Order with budget deposit requirements. Review the Pact and sign to deploy the task on-chain:`;
       const zhAgentText = `明智的选择。我已经将您的需求集成一份已就绪的“多签智能合约计算订单”，该订单附带了预算托管代扣要求。请预览契约详情，然后签名将其安全上链发布：`;
@@ -950,7 +982,7 @@ export default function App() {
             deposit,
             reward,
             passScore,
-            options: option
+            options: displayOption
           }
         }
       ]);
@@ -961,9 +993,9 @@ export default function App() {
         rewardPool: reward,
         depositAmount: deposit,
         aiThresholdLine: passScore,
-        criteriaName: option.name,
-        selectedCriteriaOption: option,
-        outputFormat: option.outputRequirements.split(' ')[0] || 'JSONL',
+        criteriaName: displayOption.name,
+        selectedCriteriaOption: displayOption,
+        outputFormat: displayOption.outputRequirements.split(' ')[0] || 'JSONL',
         rawPromptText: chatMessages[0]?.text || ''
       };
 
@@ -2991,18 +3023,12 @@ export default function App() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
                                   {msg.criteriaOptions.map((opt) => {
                                     const isSelected = msg.selectedOptionId === opt.id;
-                                    let optName = opt.name;
-                                    let optDesc = opt.description;
-                                    if (locale === 'zh') {
-                                      optName = opt.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计';
-                                      optDesc = opt.id.includes('correctness') 
-                                        ? '深度考核代码逻辑正确性、测试用例无错契合度以及对智能合约漏洞精确解析得分，权重分配重点在逻辑审查'
-                                        : '高宽容边缘场景覆盖规则，注重多轮思维推理的连贯与输出格式的严格对账（JSONL），适用于大规模常规模型校准';
-                                    }
+                                    const isPrimary = isPrimarySpecOption(opt);
+                                    const displayOpt = getSpecCriteriaOptionDisplay(opt, locale);
                                     return (
                                       <div 
                                         key={opt.id} 
-                                        className={`bg-[#0b0705] p-3.5 rounded border flex flex-col justify-between transition-all relative ${
+                                        className={`${isPrimary ? 'bg-[#0b0705]' : 'bg-[#130b09]'} p-3.5 rounded border flex flex-col justify-between transition-all relative ${
                                           isSelected 
                                             ? 'border-[#dfab6c] ring-1 ring-[#dfab6c]/30' 
                                             : 'border-[#4a3427] hover:border-[#dfab6c]/60'
@@ -3010,10 +3036,10 @@ export default function App() {
                                       >
                                         <div>
                                           <h4 className="font-serif font-black text-xs text-[#ebdcb9] mb-1.5 flex items-center justify-between uppercase">
-                                            {optName}
+                                            {displayOpt.name}
                                             {isSelected && <span className="bg-[#dfab6c] text-[#150f0c] rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">✓</span>}
                                           </h4>
-                                          <p className="text-[10px] text-[#a58d7c] font-mono leading-relaxed mt-1">{optDesc}</p>
+                                          <p className="text-[10px] text-[#a58d7c] font-mono leading-relaxed mt-1">{displayOpt.description}</p>
                                         </div>
 
                                         <button
@@ -3057,7 +3083,7 @@ export default function App() {
                                     <div className="space-y-0.5">
                                       <span>{locale === 'zh' ? '主控验证规则:' : 'Grading logic:'}</span>
                                       <span className="block font-black text-[#dfab6c] truncate">
-                                        {locale === 'zh' ? (msg.orderPreview.options.id.includes('correctness') ? '代码逻辑高确定性检验' : '语法与边界覆盖度高宽容审计') : msg.orderPreview.options.name}
+                                        {getSpecCriteriaOptionDisplay(msg.orderPreview.options, locale).name}
                                       </span>
                                     </div>
                                     <div className="space-y-0.5">
