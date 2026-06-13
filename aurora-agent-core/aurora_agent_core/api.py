@@ -3,8 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
+import os
+from pathlib import Path
+
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from aurora_agent_core.agents.human_market_task_spec_graph import HumanMarketTaskSpecGraph
@@ -54,6 +58,20 @@ def execute(request: ExecuteRequest) -> dict[str, Any]:
     output_dir = Path(request.output_dir) if request.output_dir else None
     payload = request.model_dump(exclude={"output_dir"})
     return run_aurora_task(payload, output_dir=output_dir)
+
+
+@app.get("/v1/artifacts/download")
+def download_artifact(task_id: str = Query(..., min_length=1), filename: str = Query(..., min_length=1)):
+    """Download a single artifact file from a completed task run."""
+    base = Path("artifacts") / task_id
+    if not base.is_dir():
+        raise HTTPException(status_code=404, detail=f"Task directory not found: {task_id}")
+    # Security: prevent path traversal
+    safe_name = os.path.basename(filename)
+    file_path = base / safe_name
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Artifact file not found: {safe_name}")
+    return FileResponse(str(file_path), filename=safe_name)
 
 
 @app.post("/v1/human-market/spec")
