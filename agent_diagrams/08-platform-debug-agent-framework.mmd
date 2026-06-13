@@ -1,0 +1,52 @@
+flowchart LR
+    A["User Debug Task<br/>TaskSpec + repo_url + test_command/logs"] --> B
+
+    subgraph SG1["Runtime Reproduction & Signal Extraction"]
+        direction TB
+        B["Issue Interpreter<br/>normalize bug / policy / missing fields"]
+        C["Workspace Preparer<br/>clone public repo into sandbox"]
+        D["Repo Context Inspector<br/>scan files / tests / config / call hints"]
+        E["Reproduction Oracle Builder<br/>derive failing command or log oracle"]
+        F["Runtime State Collector<br/>run command or analyze logs"]
+        G{"Failure reproduced?"}
+        H["Failure Signals<br/>stack trace / assertion / referenced paths"]
+        B --> C --> D --> E --> F --> G
+        G -->|Yes| H
+        G -->|No, logs only / no repro| H
+    end
+
+    subgraph SG2["Root Cause Localization"]
+        direction TB
+        I["Expected Behavior Constraint<br/>from goal / test / logs / user intent"]
+        J["State Divergence Analyzer<br/>expected vs actual behavior"]
+        K["Candidate File Ranking<br/>runtime paths + repo context"]
+        L["Root Cause Localizer<br/>confidence + notes + top files"]
+        H --> J
+        I --> J
+        D --> K
+        J --> K --> L
+    end
+
+    subgraph SG3["Fix Planning & Patch Loop"]
+        direction TB
+        M{"allow_patch?"}
+        N["Fix Planner<br/>smallest safe change + verification command"]
+        O["Patch Generator<br/>LLM plan or safe heuristics"]
+        P["Verification Runner<br/>rerun reproduction command / adjacent tests"]
+        Q{"Patch verified?"}
+        R["Retry Patch Loop<br/>up to 3 iterations"]
+        S["Patch Diff + Modified Repo"]
+        L --> N --> M
+        M -->|No| T
+        M -->|Yes| O --> P --> Q
+        Q -->|No| R --> O
+        Q -->|Yes| S --> T
+    end
+
+    subgraph SG4["Artifact Packaging"]
+        direction TB
+        T["Debug Packager"]
+        U["Artifacts<br/>debug_report.md<br/>runtime.json<br/>repo_context.json<br/>trace.json<br/>patch.diff?"]
+        V["Platform Result<br/>diagnosed / patched / patch_failed"]
+        T --> U --> V
+    end

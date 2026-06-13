@@ -11,3 +11,4 @@ Files:
 - `05-technical-architecture`
 - `06-taskspec-structure`
 - `07-evolution-path`
+- `08-platform-debug-agent-framework`

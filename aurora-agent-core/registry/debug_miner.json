@@ -45,13 +45,13 @@
       "execution_policy": {
         "allow_patch": false,
         "allow_commands": [],
-        "timeout_seconds": 120,
+        "timeout_seconds": 600,
         "cleanup_repo": true
       }
     }
   },
   "pricing": {
-    "base": 0.12,
+    "base": 0.005,
     "currency": "ETH"
   },
   "routing": {
@@ -65,7 +65,7 @@
     "artifact_types": ["debug_report", "patch", "verification", "logs", "trace"]
   },
   "runtime_policy": {
-    "timeout_seconds": 120,
+    "timeout_seconds": 600,
     "allow_network": true,
     "allow_patch": false,
     "cleanup_workspace": true

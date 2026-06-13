@@ -4,6 +4,8 @@ Aurora 是当前项目的独立 Python + LangGraph Agent Backend MVP，只放在
 
 组员接入和真实调用示例见 [docs/agent-usage-guide.zh.md](/Users/root1/Desktop/hackathon/bittenssor-pro/aurora-agent-core/docs/agent-usage-guide.zh.md)。
 
+前端联调接口文档见 [docs/frontend-agent-api.zh.md](/Users/root1/Desktop/hackathon/bittenssor-pro/aurora-agent-core/docs/frontend-agent-api.zh.md)。
+
 它按照 `AGENT_ARCHITECTURE_PLAN_ZH.md` 落地为：
 
 - LangGraph 任务受理与拆解 Agent
@@ -132,8 +134,8 @@ cp .env.example .env
 
 ```bash
 ZAI_API_KEY=你的_zai_key
-AURORA_MODEL=glm-4.5-flash
-AURORA_BASE_URL=https://api.z.ai/api/paas/v4/
+AURORA_MODEL=glm-5.1
+AURORA_BASE_URL=https://api.z.ai/api/coding/paas/v4
 ```
 
 测试模型连通性：
@@ -146,10 +148,10 @@ aurora-agent-zai-smoke "用一句话介绍你自己"
 
 ```bash
 aurora-agent-zai-smoke --model glm-5.1 "用一句话介绍你自己"
-aurora-agent-zai-smoke --model glm-4.5-flash "请回复：测试成功"
+aurora-agent-zai-smoke --model glm-5 "请回复：测试成功"
 ```
 
-如果使用 GLM Coding Plan 且在官方支持的编码工具场景中，需要把 base URL 换成：
+当前默认使用官方 GLM-5.1 Coding Plan endpoint：
 
 ```bash
 AURORA_BASE_URL=https://api.z.ai/api/coding/paas/v4

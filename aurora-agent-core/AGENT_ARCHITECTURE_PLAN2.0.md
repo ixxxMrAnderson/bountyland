@@ -114,7 +114,7 @@ Debug B 方案 payload：
     "execution_policy": {
       "allow_patch": false,
       "allow_commands": ["npm test"],
-      "timeout_seconds": 120,
+      "timeout_seconds": 600,
       "cleanup_repo": true
     }
   }
@@ -172,7 +172,7 @@ Debug B 方案 payload：
     "artifact_types": ["report", "trace"]
   },
   "runtime_policy": {
-    "timeout_seconds": 120,
+    "timeout_seconds": 600,
     "allow_network": false,
     "allow_patch": false,
     "cleanup_workspace": true
@@ -342,7 +342,7 @@ Debug B 方案 payload：
       "execution_policy": {
         "allow_patch": false,
         "allow_commands": [],
-        "timeout_seconds": 120,
+        "timeout_seconds": 600,
         "cleanup_repo": true
       }
     }
@@ -399,4 +399,3 @@ Debug B 方案 payload：
 
 - 删除硬编码路由表
 - 删除旧平铺字段依赖
-

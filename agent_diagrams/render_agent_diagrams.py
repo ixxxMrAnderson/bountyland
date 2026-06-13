@@ -69,6 +69,20 @@ def rect_box(draw, box, outline=ACCENT, fill=BOX, width=4, text="", font=FONT_H2
         centered_text(draw, box, text, font=font)
 
 
+def dashed_rect(draw, box, outline=LINE, width=4, dash=18, gap=12):
+    x1, y1, x2, y2 = box
+    x = x1
+    while x < x2:
+        draw.line((x, y1, min(x + dash, x2), y1), fill=outline, width=width)
+        draw.line((x, y2, min(x + dash, x2), y2), fill=outline, width=width)
+        x += dash + gap
+    y = y1
+    while y < y2:
+        draw.line((x1, y, x1, min(y + dash, y2)), fill=outline, width=width)
+        draw.line((x2, y, x2, min(y + dash, y2)), fill=outline, width=width)
+        y += dash + gap
+
+
 def diamond(draw, center, w, h, outline=RED, fill=BOX, width=4, text="", font=FONT_H2):
     cx, cy = center
     pts = [(cx, cy - h // 2), (cx + w // 2, cy), (cx, cy + h // 2), (cx - w // 2, cy)]
@@ -243,6 +257,71 @@ def img07():
     save(image, "07-evolution-path.png")
 
 
+def img08():
+    image, draw = canvas(2500, 1380)
+    title(draw, "平台 Debug Agent 总体框架图")
+
+    rounded_box(draw, (70, 560, 350, 720), outline=RED, text="用户 Debug 任务\nTaskSpec + repo_url\n+ test_command / logs", font=FONT_H2)
+
+    dashed_rect(draw, (420, 150, 950, 1240), outline="#111827", width=5)
+    centered_text(draw, (470, 170, 900, 230), "Runtime Reproduction\n& Signal Extraction", font=FONT_H1)
+    rounded_box(draw, (500, 290, 870, 390), text="Issue Interpreter\n规范化 bug / policy / missing fields", font=FONT_H2)
+    rounded_box(draw, (500, 440, 870, 540), text="Workspace Preparer\nclone public repo into sandbox", font=FONT_H2)
+    rounded_box(draw, (500, 590, 870, 690), text="Repo Context Inspector\nscan files / tests / config", font=FONT_H2)
+    rounded_box(draw, (500, 740, 870, 840), text="Reproduction Oracle Builder\nfailing command / log oracle", font=FONT_H2)
+    rounded_box(draw, (500, 890, 870, 990), text="Runtime State Collector\nrun command or analyze logs", font=FONT_H2)
+    diamond(draw, (685, 1110), 320, 150, text="Failure\nreproduced?", font=FONT_H1)
+
+    dashed_rect(draw, (1020, 240, 1550, 1140), outline="#111827", width=5)
+    centered_text(draw, (1070, 255, 1500, 315), "Root Cause Localization", font=FONT_H1)
+    rounded_box(draw, (1100, 390, 1470, 490), text="Expected Behavior Constraint\nfrom goal / test / logs / user intent", font=FONT_H2)
+    rounded_box(draw, (1100, 540, 1470, 640), text="State Divergence Analyzer\nexpected vs actual behavior", font=FONT_H2)
+    rounded_box(draw, (1100, 690, 1470, 790), text="Candidate File Ranking\nruntime paths + repo context", font=FONT_H2)
+    rounded_box(draw, (1100, 840, 1470, 940), text="Root Cause Localizer\nconfidence + top files + notes", font=FONT_H2)
+
+    dashed_rect(draw, (1630, 240, 2180, 1280), outline="#111827", width=5)
+    centered_text(draw, (1680, 255, 2130, 315), "Fix Planning & Patch Loop", font=FONT_H1)
+    rounded_box(draw, (1710, 390, 2100, 490), text="Fix Planner\nsmallest safe change\n+ verification command", font=FONT_H2)
+    diamond(draw, (1905, 610), 310, 150, text="allow\npatch?", font=FONT_H1)
+    rounded_box(draw, (1710, 740, 2100, 840), text="Patch Generator\nLLM plan or safe heuristics", font=FONT_H2)
+    rounded_box(draw, (1710, 890, 2100, 990), text="Verification Runner\nrerun reproduction command", font=FONT_H2)
+    diamond(draw, (1905, 1120), 320, 150, text="Patch\nverified?", font=FONT_H1)
+    rounded_box(draw, (1650, 1180, 1885, 1280), text="Retry Patch Loop\nup to 3 iterations", font=FONT_H2)
+    rounded_box(draw, (1925, 1180, 2160, 1280), text="Patch Diff +\nModified Repo", font=FONT_H2)
+    rounded_box(draw, (1710, 560, 1840, 660), outline=RED, text="No", font=FONT_H1)
+    rounded_box(draw, (1970, 560, 2100, 660), outline=RED, text="Yes", font=FONT_H1)
+
+    rounded_box(draw, (2240, 500, 2450, 620), outline=RED, text="Debug\nPackager", font=FONT_H1)
+    rounded_box(draw, (2200, 700, 2490, 880), outline=RED, text="平台结果\n diagnosed /\n patched /\n patch_failed", font=FONT_H1)
+
+    arrow(draw, (350, 640), (500, 340))
+    arrow(draw, (685, 390), (685, 440))
+    arrow(draw, (685, 540), (685, 590))
+    arrow(draw, (685, 690), (685, 740))
+    arrow(draw, (685, 840), (685, 890))
+    arrow(draw, (685, 990), (685, 1035))
+
+    arrow(draw, (845, 1110), (1100, 590))
+    arrow(draw, (870, 640), (1100, 740))
+    arrow(draw, (1285, 490), (1285, 540))
+    arrow(draw, (1285, 640), (1285, 690))
+    arrow(draw, (1285, 790), (1285, 840))
+
+    arrow(draw, (1470, 890), (1710, 440))
+    arrow(draw, (1905, 685), (1905, 740))
+    arrow(draw, (1905, 840), (1905, 890))
+    arrow(draw, (1905, 990), (1905, 1045))
+    arrow(draw, (1745, 1120), (1885, 1230))
+    arrow(draw, (1885, 1230), (1710, 790))
+    arrow(draw, (2065, 1120), (1925, 1230))
+    arrow(draw, (1840, 610), (1710, 610))
+    arrow(draw, (2100, 610), (2240, 560))
+    arrow(draw, (2160, 1230), (2240, 560))
+    arrow(draw, (2345, 620), (2345, 700))
+
+    save(image, "08-platform-debug-agent-framework.png")
+
+
 def main():
     img01()
     img02()
@@ -251,6 +330,7 @@ def main():
     img05()
     img06()
     img07()
+    img08()
 
 
 if __name__ == "__main__":

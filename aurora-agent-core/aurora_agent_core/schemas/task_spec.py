@@ -103,7 +103,7 @@ def build_debug_payload(draft_task: dict[str, Any]) -> dict[str, Any]:
         "execution_policy": {
             "allow_patch": coerce_bool(execution_policy.get("allow_patch", draft_task.get("allow_patch", False))),
             "allow_commands": allow_commands,
-            "timeout_seconds": coerce_int(execution_policy.get("timeout_seconds") or draft_task.get("timeout_seconds")) or 120,
+            "timeout_seconds": coerce_int(execution_policy.get("timeout_seconds") or draft_task.get("timeout_seconds")) or 600,
             "cleanup_repo": coerce_bool(execution_policy.get("cleanup_repo", draft_task.get("cleanup_repo", True))),
         },
     }

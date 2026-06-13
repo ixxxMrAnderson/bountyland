@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 
-DEFAULT_ZAI_BASE_URL = "https://api.z.ai/api/paas/v4/"
-DEFAULT_ZAI_MODEL = "glm-4.5-flash"
+DEFAULT_ZAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
+DEFAULT_ZAI_MODEL = "glm-5.1"
 
 
 @dataclass(frozen=True)
@@ -109,7 +109,7 @@ def get_usage_value(usage: Any, key: str) -> int | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Smoke test Z.ai OpenAI-compatible chat completion.")
-    parser.add_argument("--model", default=None, help="Z.ai model name, for example glm-4.5-flash or glm-5.1.")
+    parser.add_argument("--model", default=None, help="Z.ai model name, for example glm-5.1 or glm-5.")
     parser.add_argument("prompt", nargs="*", default=["用一句话介绍你自己。"])
     args = parser.parse_args()
     config = ZaiChatConfig.from_env()

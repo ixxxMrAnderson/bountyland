@@ -84,7 +84,30 @@ def test_debug_b_plan_intake_builds_git_payload() -> None:
     assert debug["code_source"]["type"] == "git"
     assert debug["code_source"]["repo_url"] == "https://github.com/example/project"
     assert debug["reproduction"]["test_command"] == "npm test"
-    assert result["suggested_price"] == 0.12
+    assert result["suggested_price"] == 0.016
+    assert result["pricing"]["components"][0]["name"] == "base"
+
+
+def test_debug_dynamic_pricing_uses_patch_test_and_repo_size(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aurora_agent_core.pricing.fetch_github_repo_size",
+        lambda repo_url: {"status": "ok", "size_kb": 300_000, "repo_url": repo_url},
+    )
+    result = TaskIntakeGraph().run(
+        {
+            "user_input": (
+                "帮我修复这个公开 GitHub 仓库 https://github.com/sympy/sympy\n"
+                "测试命令: python -m pytest\n"
+                "期望：测试通过\n"
+                "实际：失败\n"
+                "保留仓库"
+            )
+        }
+    )
+
+    assert result["suggested_price"] == 0.044
+    assert result["pricing"]["cap"] == 0.05
+    assert result["pricing"]["repo_size"]["size_kb"] == 300_000
 
 
 def test_debug_parser_splits_command_expected_and_actual_fields() -> None:
@@ -100,6 +123,23 @@ def test_debug_parser_splits_command_expected_and_actual_fields() -> None:
     assert debug["reproduction"]["test_command"] == "python -m pytest tests"
     assert debug["expected_behavior"] == "测试全部通过"
     assert debug["actual_behavior"] == "测试失败"
+
+
+def test_debug_parser_keeps_shell_semicolon_inside_command() -> None:
+    result = TaskIntakeGraph().run(
+        {
+            "user_input": (
+                "帮我修复这个公开 GitHub 仓库 https://github.com/sympy/sympy\n"
+                "测试命令: bash -lc \"python -m pytest && python -S -c 'import six; print(six.string_types)'\"\n"
+                "期望：测试全部通过\n"
+                "实际：No module named six"
+            )
+        }
+    )
+    command = result["draft_task"]["debug"]["reproduction"]["test_command"]
+
+    assert "import six; print(six.string_types)" in command
+    assert command.endswith('"')
 
 
 def test_debug_intake_enables_patch_mode_when_user_asks_for_fixed_code() -> None:

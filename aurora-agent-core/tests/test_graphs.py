@@ -306,3 +306,14 @@ def test_debug_miner_loop_reads_nested_llm_metadata(monkeypatch, tmp_path) -> No
     assert result["usage"]["llm"]["calls"] == 2
     assert result["usage"]["llm_total_tokens"] == 280
     assert (tmp_path / "debug_nested_llm" / "workspace" / "repo" / "fix.py").exists()
+
+
+def test_truncate_output_preserves_tail_failure_signal() -> None:
+    from aurora_agent_core.miners.debug_miner_graph import extract_missing_modules, truncate_output
+
+    output = "progress\n" * 1000 + "ModuleNotFoundError: No module named 'six'\n"
+    truncated = truncate_output(output, 1000)
+
+    assert "aurora output truncated" in truncated
+    assert "ModuleNotFoundError: No module named 'six'" in truncated
+    assert extract_missing_modules(truncated) == ["six"]

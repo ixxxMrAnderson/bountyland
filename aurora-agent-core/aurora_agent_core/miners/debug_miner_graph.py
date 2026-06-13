@@ -133,7 +133,7 @@ def issue_interpreter(state: DebugMinerState) -> DebugMinerState:
         "test_command": test_command,
         "logs": logs,
         "allow_patch": bool(execution_policy.get("allow_patch", False)),
-        "timeout_seconds": int(execution_policy.get("timeout_seconds") or 120),
+        "timeout_seconds": int(execution_policy.get("timeout_seconds") or 600),
         "cleanup_repo": bool(execution_policy.get("cleanup_repo", not execution_policy.get("allow_patch", False))),
         "use_llm": debug_use_llm_enabled(spec, execution_policy),
         "missing_fields": missing,
@@ -171,7 +171,7 @@ def workspace_preparer(state: DebugMinerState) -> DebugMinerState:
 
     issue = state["issue"]
     start = time.time()
-    clone_result = clone_repository(issue["repo_url"], repo_path, issue.get("branch"), issue.get("timeout_seconds", 120))
+    clone_result = clone_repository(issue["repo_url"], repo_path, issue.get("branch"), issue.get("timeout_seconds", 600))
     clone_result["elapsed_seconds"] = round(time.time() - start, 3)
     status = "cloned" if clone_result["returncode"] == 0 else "failed"
     detail = {
@@ -240,7 +240,7 @@ def runtime_state_collector(state: DebugMinerState) -> DebugMinerState:
         }
 
     start = time.time()
-    runtime = run_command(command, Path(state["repo_path"]), issue.get("timeout_seconds", 120))
+    runtime = run_command(command, Path(state["repo_path"]), issue.get("timeout_seconds", 600))
     runtime["elapsed_seconds"] = round(time.time() - start, 3)
     status = "passed" if runtime["returncode"] == 0 else "failed"
     return {
@@ -330,7 +330,7 @@ def patch_generator(state: DebugMinerState) -> DebugMinerState:
         }
 
     repo_path = Path(state["repo_path"])
-    patch_result = run_patch_loop(repo_path, state, max_iterations=3)
+    patch_result = run_patch_loop(repo_path, state, max_iterations=10)
     status = "patched" if patch_result.get("patch_generated") else "no_patch"
     return {
         "patch_result": patch_result,
@@ -636,6 +636,7 @@ def rank_candidate_files(repo_path: Path, referenced_paths: list[str], repo_cont
 def run_patch_loop(repo_path: Path, state: DebugMinerState, max_iterations: int) -> dict[str, Any]:
     issue = state.get("issue") or {}
     current_output = ((state.get("reproduction") or {}).get("runtime") or {}).get("combined_output") or ""
+    verification_timeout_seconds = min(int(issue.get("timeout_seconds") or 600), 120)
     iterations: list[dict[str, Any]] = []
     files_modified: list[str] = []
     diffs: list[str] = []
@@ -687,8 +688,9 @@ def run_patch_loop(repo_path: Path, state: DebugMinerState, max_iterations: int)
 
         if issue.get("test_command"):
             start = time.time()
-            verification = run_command(issue["test_command"], repo_path, issue.get("timeout_seconds", 120))
+            verification = run_command(issue["test_command"], repo_path, verification_timeout_seconds)
             verification["elapsed_seconds"] = round(time.time() - start, 3)
+            verification["timeout_seconds"] = verification_timeout_seconds
         else:
             verification = {"returncode": None, "combined_output": "", "stdout": "", "stderr": "", "timed_out": False}
         final_verification = verification
@@ -1204,7 +1206,12 @@ def truncate_output(value: Any, limit: int = 20000) -> str:
     text = value.decode("utf-8", errors="replace") if isinstance(value, bytes) else str(value or "")
     if len(text) <= limit:
         return text
-    return text[: limit - 3] + "..."
+    marker = "\n... [aurora output truncated: preserved head and tail] ...\n"
+    if limit <= len(marker) + 20:
+        return text[-limit:]
+    head_size = max(1, (limit - len(marker)) // 2)
+    tail_size = max(1, limit - len(marker) - head_size)
+    return text[:head_size] + marker + text[-tail_size:]
 
 
 def redact_command(command: list[str]) -> list[str]:

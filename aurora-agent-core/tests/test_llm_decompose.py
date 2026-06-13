@@ -72,7 +72,7 @@ def test_llm_decompose_preserves_user_patch_intent(monkeypatch) -> None:
                 "execution_policy": {
                   "allow_patch": false,
                   "allow_commands": [],
-                  "timeout_seconds": 120,
+                  "timeout_seconds": 600,
                   "cleanup_repo": true
                 }
               }

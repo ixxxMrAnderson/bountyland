@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 
 from aurora_agent_core.core.trace import append_trace, new_run_id
 from aurora_agent_core.llm.zai_client import call_zai_chat_with_usage
+from aurora_agent_core.pricing import estimate_debug_price
 from aurora_agent_core.registry import get_registry_entry, load_miner_registry
 from aurora_agent_core.schemas.task_spec import get_missing_fields, normalize_task_spec
 
@@ -19,6 +20,7 @@ class TaskIntakeState(TypedDict, total=False):
     feasibility: dict[str, Any]
     missing_fields: list[str]
     suggested_price: Optional[float]
+    pricing: dict[str, Any]
     user_budget: Optional[float]
     price_confirmed: bool
     use_llm: bool
@@ -228,7 +230,7 @@ def llm_decompose_task(text: str, task_type: str) -> tuple[dict[str, Any], dict[
             "execution_policy": {
                 "allow_patch": False,
                 "allow_commands": [],
-                "timeout_seconds": 120,
+                "timeout_seconds": 600,
                 "cleanup_repo": True,
             },
         },
@@ -372,8 +374,8 @@ def price_estimator(state: TaskIntakeState) -> TaskIntakeState:
     if state.get("missing_fields"):
         price = None
     elif state["draft_task"]["task_type"] == "code_debug":
-        entry = get_registry_entry("code_debug") or {}
-        price = float((entry.get("pricing") or {}).get("base", 0.12))
+        pricing = estimate_debug_price(state["draft_task"])
+        price = float(pricing["suggested_price"])
     else:
         entry = get_registry_entry("dataset_generation") or {}
         base_price = float((entry.get("pricing") or {}).get("base", 0.04))
@@ -381,10 +383,19 @@ def price_estimator(state: TaskIntakeState) -> TaskIntakeState:
         source_count = max(1, len(state["draft_task"].get("source_scope", [])))
         source_multiplier = max(1, source_count * 0.18)
         price = round(base_price + min(size, 1000) * 0.0007 * source_multiplier, 3)
+        pricing = {
+            "suggested_price": price,
+            "currency": "ETH",
+            "components": [
+                {"name": "base", "amount": base_price},
+                {"name": "target_size", "amount": round(price - base_price, 3)},
+            ],
+        }
 
     return {
         "suggested_price": price,
-        "trace": append_trace(state, "price_estimator", "completed", {"suggested_price": price}),
+        "pricing": pricing if not state.get("missing_fields") else {},
+        "trace": append_trace(state, "price_estimator", "completed", {"suggested_price": price, "pricing": pricing if not state.get("missing_fields") else {}}),
     }
 
 
@@ -418,6 +429,7 @@ def normalize_task(state: TaskIntakeState) -> TaskIntakeState:
         "draft_task": state["draft_task"],
         "missing_fields": state.get("missing_fields", []),
         "suggested_price": state.get("suggested_price"),
+        "pricing": state.get("pricing", {}),
         "user_budget": state.get("user_budget"),
         "ready": state.get("ready", False),
         "usage": build_intake_usage(state),
@@ -432,6 +444,7 @@ def normalize_task(state: TaskIntakeState) -> TaskIntakeState:
             {
                 "suggested_price": state.get("suggested_price"),
                 "user_budget": state.get("user_budget"),
+                "pricing": state.get("pricing", {}),
                 "metadata": metadata,
             },
         )
@@ -458,6 +471,7 @@ def build_intake_usage(state: TaskIntakeState) -> dict[str, Any]:
             "suggested_price": state.get("suggested_price"),
             "user_budget": state.get("user_budget"),
             "currency": "ETH",
+            "breakdown": state.get("pricing", {}),
         },
     }
     return usage
@@ -627,7 +641,7 @@ def build_debug_payload_from_text(text: str) -> dict[str, Any]:
         "execution_policy": {
             "allow_patch": allow_patch,
             "allow_commands": allow_commands,
-            "timeout_seconds": extract_timeout_seconds(text) or 120,
+            "timeout_seconds": extract_timeout_seconds(text) or 600,
             "cleanup_repo": not allow_patch,
         },
     }
@@ -662,7 +676,7 @@ def extract_commit(text: str) -> str | None:
 
 def extract_test_command(text: str) -> str | None:
     patterns = [
-        r"(?:测试命令|复现命令|运行命令|test command|command)[:： ]+([^\n。；;]+)",
+        r"(?:测试命令|复现命令|运行命令|test command|command)[:： ]+([^\n]+)",
         r"`([^`]*(?:test|pytest|pnpm|npm|yarn|uv|go test|cargo test)[^`]*)`",
     ]
     for pattern in patterns:

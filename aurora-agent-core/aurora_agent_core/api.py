@@ -7,12 +7,23 @@ import os
 from pathlib import Path
 
 import uvicorn
+<<<<<<< Updated upstream
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+=======
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+>>>>>>> Stashed changes
 
 from aurora_agent_core.agents.human_market_task_spec_graph import HumanMarketTaskSpecGraph
 from aurora_agent_core.agents.task_intake_graph import TaskIntakeGraph
+from aurora_agent_core.payment import verify_payment_tx
+from aurora_agent_core.platform_agent_registry import (
+    create_platform_agent,
+    get_platform_agent,
+    list_platform_agents,
+)
 from aurora_agent_core.runner import run_aurora_task
 
 
@@ -25,6 +36,10 @@ class IntakeRequest(BaseModel):
 
 class ExecuteRequest(IntakeRequest):
     output_dir: Optional[str] = None
+    payment_verified: bool = False
+    payment_tx_hash: Optional[str] = None
+    payment_expected_price: Optional[float] = None
+    payer_address: Optional[str] = None
 
 
 class HumanMarketSpecRequest(BaseModel):
@@ -34,6 +49,38 @@ class HumanMarketSpecRequest(BaseModel):
     task_definition: Optional[dict[str, Any]] = None
     validator_criteria: Optional[dict[str, Any]] = None
     reward_rule: Optional[dict[str, Any]] = None
+
+
+class PaymentVerifyRequest(BaseModel):
+    tx_hash: str = Field(..., min_length=66, max_length=66)
+    expected_price: float = Field(..., gt=0)
+    payer_address: Optional[str] = None
+
+
+class PlatformAgentInputField(BaseModel):
+    key: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+    required: bool
+
+
+class PlatformAgentInputSchema(BaseModel):
+    fields: list[PlatformAgentInputField] = Field(..., min_length=1)
+
+
+class PlatformAgentOutputSchema(BaseModel):
+    type: str = Field(..., min_length=1)
+    result_path: str = Field(..., min_length=1)
+
+
+class PlatformAgentCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent_name: str = Field(..., min_length=1)
+    company_name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    api_url: HttpUrl
+    input_schema: PlatformAgentInputSchema
+    output_schema: PlatformAgentOutputSchema
 
 
 app = FastAPI(
@@ -56,8 +103,36 @@ def intake(request: IntakeRequest) -> dict[str, Any]:
 @app.post("/v1/execute")
 def execute(request: ExecuteRequest) -> dict[str, Any]:
     output_dir = Path(request.output_dir) if request.output_dir else None
+    payment_result = None
+    if request.payment_tx_hash and not request.payment_verified:
+        expected_price = request.payment_expected_price or request.user_budget
+        if expected_price is None:
+            raise HTTPException(status_code=400, detail="payment_expected_price or user_budget is required when payment_tx_hash is provided.")
+        payment_result = verify_payment_tx(
+            tx_hash=request.payment_tx_hash,
+            expected_price_eth=expected_price,
+            payer_address=request.payer_address,
+        )
+        if not payment_result.get("payment_verified"):
+            raise HTTPException(status_code=402, detail=payment_result)
     payload = request.model_dump(exclude={"output_dir"})
-    return run_aurora_task(payload, output_dir=output_dir)
+    payload["payment_verified"] = bool(request.payment_verified or payment_result)
+    result = run_aurora_task(payload, output_dir=output_dir)
+    if payment_result:
+        result["payment"] = payment_result
+    return result
+
+
+@app.post("/v1/payment/verify")
+def verify_payment(request: PaymentVerifyRequest) -> dict[str, Any]:
+    try:
+        return verify_payment_tx(
+            tx_hash=request.tx_hash,
+            expected_price_eth=request.expected_price,
+            payer_address=request.payer_address,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.get("/v1/artifacts/download")
@@ -77,6 +152,25 @@ def download_artifact(task_id: str = Query(..., min_length=1), filename: str = Q
 @app.post("/v1/human-market/spec")
 def human_market_spec(request: HumanMarketSpecRequest) -> dict[str, Any]:
     return HumanMarketTaskSpecGraph().run(request.model_dump())
+
+
+@app.post("/v1/platform-agents")
+def register_platform_agent(request: PlatformAgentCreateRequest) -> dict[str, Any]:
+    payload = request.model_dump(mode="json")
+    return create_platform_agent(payload)
+
+
+@app.get("/v1/platform-agents")
+def platform_agents() -> dict[str, Any]:
+    return {"agents": list_platform_agents()}
+
+
+@app.get("/v1/platform-agents/{agent_id}")
+def platform_agent_detail(agent_id: str) -> dict[str, Any]:
+    agent = get_platform_agent(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Platform agent not found")
+    return agent
 
 
 def main() -> None:
