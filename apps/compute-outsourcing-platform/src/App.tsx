@@ -42,9 +42,10 @@ import { ValidatorPanel } from './components/ValidatorPanel';
 import { ActivityCard } from './components/ActivityCard';
 import { ActivityDetailModal } from './components/ActivityDetailModal';
 import { PlatformAgents } from './components/PlatformAgents';
+import TargetCursor from './components/TargetCursor';
 
-import { 
-  getCriteriaOptionsForTask, 
+import {
+  getCriteriaOptionsForTask,
   initialTasks, 
   getInitialActivities, 
   generateHash 
@@ -84,6 +85,12 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080504] text-[#f4e5c3]">
+      <TargetCursor
+        spinDuration={2}
+        hideDefaultCursor
+        parallaxOn
+        hoverDuration={0.2}
+      />
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${introBackground})` }}
@@ -94,7 +101,7 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
       <button
         type="button"
         onClick={onToggleLanguage}
-        className="absolute right-6 top-6 z-20 h-10 px-4 border border-[#e0ad71]/45 bg-[#100907]/75 text-[#f0c384] hover:bg-[#1a100c] hover:border-[#f0c384] transition font-mono text-xs font-bold tracking-[0.18em]"
+        className="cursor-target absolute right-6 top-6 z-20 h-10 px-4 border border-[#e0ad71]/45 bg-[#100907]/75 text-[#f0c384] hover:bg-[#1a100c] hover:border-[#f0c384] transition font-mono text-xs font-bold tracking-[0.18em]"
       >
         {locale === 'en' ? '中文' : 'EN'}
       </button>
@@ -109,14 +116,14 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
             <button
               type="button"
               onClick={() => setShowAbout(true)}
-              className="h-8 min-w-24 border border-[#e0ad71]/20 bg-[#130b08]/28 px-5 text-center font-display text-[8px] font-normal uppercase tracking-[0.46em] text-[#e7bd7d]/48 transition hover:border-[#f0c384]/55 hover:bg-[#21140f]/45 hover:text-[#f0c384]/78"
+              className="cursor-target h-8 min-w-24 border border-[#e0ad71]/20 bg-[#130b08]/28 px-5 text-center font-display text-[8px] font-normal uppercase tracking-[0.46em] text-[#e7bd7d]/48 transition hover:border-[#f0c384]/55 hover:bg-[#21140f]/45 hover:text-[#f0c384]/78"
             >
               About
             </button>
             <button
               type="button"
               onClick={onLogin}
-              className="group h-8 min-w-24 border border-[#912a19]/34 bg-[#bf311d]/42 px-5 text-center font-display text-[8px] font-normal uppercase tracking-[0.46em] text-white/52 shadow-[0_14px_32px_rgba(191,49,29,0.08)] transition hover:bg-[#a92918]/68 hover:text-white/82"
+              className="cursor-target group h-8 min-w-24 border border-[#912a19]/34 bg-[#bf311d]/42 px-5 text-center font-display text-[8px] font-normal uppercase tracking-[0.46em] text-white/52 shadow-[0_14px_32px_rgba(191,49,29,0.08)] transition hover:bg-[#a92918]/68 hover:text-white/82"
             >
               <span className="inline-flex items-center justify-center gap-3">
                 Login
@@ -139,7 +146,7 @@ const IntroLanding: React.FC<IntroLandingProps> = ({ locale, onLogin, onToggleLa
             <button
               type="button"
               onClick={() => setShowAbout(false)}
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-[#e0ad71]/18 bg-[#160d09]/35 text-[#f3d4a0]/50 transition hover:border-[#f3d4a0]/45 hover:text-[#f3d4a0]/80"
+              className="cursor-target absolute right-3 top-3 flex h-8 w-8 items-center justify-center border border-[#e0ad71]/18 bg-[#160d09]/35 text-[#f3d4a0]/50 transition hover:border-[#f3d4a0]/45 hover:text-[#f3d4a0]/80"
               aria-label={locale === 'zh' ? '关闭介绍' : 'Close about'}
             >
               <X className="h-4 w-4" />

@@ -7,6 +7,7 @@ import React from 'react';
 import { Target, Shield, Award, FileText, Bot } from 'lucide-react';
 import { Task } from '../types';
 import { useTranslation } from '../locales';
+import cardBackground from '../assets/card.png';
 
 interface TaskCardProps {
   task: Task;
@@ -33,11 +34,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <div 
-      className={`rounded-md px-6 py-5 hover:shadow-2xl hover:shadow-[#1a0f0a]/50 transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden select-none outline outline-1 outline-offset-4 ${
-        task.isCreatedByCurrentUser 
-          ? 'bg-[#faecd1] border-4 border-[#a82a18] ring-2 ring-[#a82a18]/25 outline-[#a82a18]/30' 
-          : 'bg-[#eee1c9] border-4 border-[#3e291b] outline-[#eee1c9]/45'
+      className={`rounded-md px-10 py-9 hover:shadow-2xl hover:shadow-[#1a0f0a]/50 transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden select-none ${
+        task.isCreatedByCurrentUser
+          ? 'ring-2 ring-[#a82a18]/25'
+          : ''
       }`}
+      style={{
+        backgroundImage: `url(${cardBackground})`,
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
       onClick={() => onOpenDetail(task)}
     >
       {/* Ink & Wear Splatters (Authentic Rustic Paper feeling) */}
@@ -46,20 +53,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <div className="absolute top-1/2 left-8 w-6 h-6 rounded-full bg-[#825c3c]/15 blur-sm pointer-events-none select-none"></div>
       
       {/* Bullet Holes in Corners (Detailed Wild West Atmosphere) */}
-      <div className="absolute top-2.5 left-2.5 w-5 h-5 rounded-full bg-[#18110e] border border-[#302119] z-10 pointer-events-none flex items-center justify-center shadow-inner">
-        <div className="absolute w-7 h-[1px] bg-stone-950/40 rotate-12"></div>
-        <div className="absolute w-[1px] h-7 bg-stone-950/40 -rotate-45"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-stone-900"></div>
+      <div className="absolute top-5 left-5 w-4 h-4 rounded-full bg-[#2a1c14]/60 border border-[#3e291b]/40 z-10 pointer-events-none flex items-center justify-center shadow-inner opacity-70">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#1c110b]/70"></div>
       </div>
-      <div className="absolute bottom-2.5 right-2.5 w-5 h-5 rounded-full bg-[#18110e] border border-[#302119] z-10 pointer-events-none flex items-center justify-center shadow-inner">
-        <div className="absolute w-7 h-[1px] bg-stone-950/40 -rotate-12"></div>
-        <div className="absolute w-[1px] h-7 bg-stone-950/40 rotate-30"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-stone-900"></div>
+      <div className="absolute bottom-5 right-5 w-4 h-4 rounded-full bg-[#2a1c14]/60 border border-[#3e291b]/40 z-10 pointer-events-none flex items-center justify-center shadow-inner opacity-70">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#1c110b]/70"></div>
       </div>
 
       {/* Sheriff Star Icon Seal Flanking top-left */}
-      <div className="absolute left-3 top-3 pointer-events-none select-none z-10 bg-transparent flex items-center justify-center">
-        <svg viewBox="0 0 100 100" className={`w-7 h-7 drop-shadow-md ${task.isCreatedByCurrentUser ? 'text-[#bf311d]' : 'text-[#9e331b]'}`} fill="currentColor">
+      <div className="absolute left-5 top-12 pointer-events-none select-none z-10 bg-transparent flex items-center justify-center opacity-80">
+        <svg viewBox="0 0 100 100" className={`w-6 h-6 drop-shadow-sm ${task.isCreatedByCurrentUser ? 'text-[#bf311d]/85' : 'text-[#9e331b]/85'}`} fill="currentColor">
           <path d="M50,11 L62,35 L89,38 L68,57 L74,84 L50,71 L26,84 L32,57 L11,38 L38,35 Z" />
           <circle cx="50" cy="11" r="3" />
           <circle cx="89" cy="38" r="3" />
@@ -100,15 +103,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </svg>
 
       <div>
-        {/* Ribbon Banner (Triple Stars) */}
-        <div className="relative -mt-5 mb-2.5 flex flex-col items-center">
-          <div className="bg-[#9e331b] text-[#eee1c9] text-[8px] tracking-[0.2em] uppercase py-0.5 px-6 rounded-b border-x border-b border-[#6e2211] shadow-md font-mono flex items-center gap-1.5">
-            <span>★</span>
-            <span>★</span>
-            <span>★</span>
-          </div>
-        </div>
-
         {/* Vintage Header Area */}
         <div className="text-center font-serif mb-2 pb-2.5 border-b-2 border-[#543b27]/20 border-dotted">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#2e1c12] tracking-[0.16em] uppercase select-all leading-none py-1 drop-shadow-xs font-serif font-black">
@@ -123,7 +117,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Info Line */}
         <div className="flex items-center justify-between gap-3 mb-3 text-[9.5px] font-mono relative z-10">
-          <span className="px-2 py-0.5 rounded bg-[#ebdcb9] text-[#785435] border border-[#d2be9b] uppercase tracking-widest font-black">
+          <span className="px-2 py-0.5 rounded bg-[#d8c7a0]/30 text-[#5e3f24] border border-[#a8895f]/40 uppercase tracking-widest font-black">
             {locale === 'zh' ? '链上合规 (Arbitrum)' : 'ON-CHAIN (Arbitrum)'}
           </span>
           <span className="text-[#bf311d] font-black bg-[#9e331b]/5 px-2 py-0.5 rounded border border-[#9e331b]/15">
@@ -137,20 +131,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </h3>
 
         {/* Summary Description */}
-        <p className="text-[11.5px] text-[#423126] line-clamp-2 leading-relaxed mb-4 font-sans select-text relative z-10 font-medium">
+        <p className="text-[11.5px] text-[#2c1c12] line-clamp-2 leading-relaxed mb-4 font-sans select-text relative z-10 font-semibold">
           {task.description}
         </p>
 
         {/* Tags and Features Info */}
         <div className="grid grid-cols-2 gap-1.5 mb-4 relative z-10">
-          <div className="flex items-center gap-1.5 text-[9.5px] font-mono text-[#5c493c] bg-[#eae0cb]/80 px-2 py-1.5 rounded border border-[#d0c0a5]/90 shadow-sm">
+          <div className="flex items-center gap-1.5 text-[9.5px] font-mono text-[#3e2c1f] bg-[#e0d0ab]/25 px-2 py-1.5 rounded border border-[#a8895f]/35">
             <FileText className="w-3.5 h-3.5 text-[#9e331b]" />
-            <span className="text-[#5c493c] truncate">{t('formatLabel')} {task.outputFormat}</span>
+            <span className="text-[#3e2c1f] truncate">{t('formatLabel')} {task.outputFormat}</span>
           </div>
-          
-          <div className="flex items-center gap-1.5 text-[9.5px] font-mono text-[#5c493c] bg-[#eae0cb]/80 px-2 py-1.5 rounded border border-[#d0c0a5]/90 shadow-sm">
+
+          <div className="flex items-center gap-1.5 text-[9.5px] font-mono text-[#3e2c1f] bg-[#e0d0ab]/25 px-2 py-1.5 rounded border border-[#a8895f]/35">
             <Shield className="w-3.5 h-3.5 text-[#9e331b]" />
-            <span className="text-[#5c493c] truncate">{locale === 'zh' ? '在册矿工:' : 'Hunters:'} {task.minerSubmissionsCount}</span>
+            <span className="text-[#3e2c1f] truncate">{locale === 'zh' ? '在册矿工:' : 'Hunters:'} {task.minerSubmissionsCount}</span>
           </div>
 
           {task.status === 'Agent is working' ? (
@@ -179,18 +173,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <span>{task.rewardPool.toFixed(3)}</span> 
             <span className="font-sans font-bold text-[#2a170d] text-[13px]">ETH</span>
           </div>
-          <span className="text-[8.5px] text-[#6e4e37] font-serif uppercase tracking-widest mt-1">
+          <span className="text-[8.5px] text-[#5a3d28] font-serif uppercase tracking-widest mt-1">
             {locale === 'zh' ? '现金储备多签结算' : 'CASH REWARD SECURED'}
           </span>
         </div>
 
         {/* Caution Stamp */}
-        <div className="text-center font-serif text-[10px] font-black text-[#eee1c9] bg-[#9e331b] tracking-[0.15em] uppercase py-1 px-4 mb-3 rounded-sm shadow-sm border border-[#6e2211]">
+        <div className="relative text-center font-serif text-[10px] font-black text-[#f4e4c1] bg-gradient-to-b from-[#a8331c] to-[#7d2512] tracking-[0.15em] uppercase py-1.5 px-4 mb-3 rounded-[3px] border border-[#52180b] ring-1 ring-inset ring-[#f0c79a]/20 shadow-[0_2px_0_#3a1006,0_3px_5px_rgba(20,8,4,0.3)] [text-shadow:0_1px_0_rgba(0,0,0,0.4)]">
+          <span className="absolute inset-[3px] rounded-[2px] border border-dashed border-[#f0c79a]/20 pointer-events-none"></span>
           {locale === 'zh' ? '谨慎对待 · 链上智能托管' : 'APPROACH WITH CAUTION'}
         </div>
 
         {/* Decorative Micro-text */}
-        <p className="text-[7.5px] font-serif text-[#6b503e] text-center leading-normal select-none uppercase tracking-tight max-w-[95%] mx-auto pb-3 mb-1 opacity-80 border-b border-[#543b27]/10">
+        <p className="text-[7.5px] font-serif text-[#5a3d28] text-center leading-normal select-none uppercase tracking-tight max-w-[95%] mx-auto pb-3 mb-1 opacity-90 border-b border-[#543b27]/10">
           {locale === 'zh' 
             ? '按莫哈维邮道自治治安多签仲裁庭命令发布 • 重金算力代付' 
             : 'BY ORDER OF THE MOJAVE COGNITIVE ARBITRATION TRIBUNAL'}
@@ -203,14 +198,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={() => onCancelWarrant?.(task)}
-                  className="flex-1 py-1.5 bg-[#1c110b] hover:bg-[#9e331b] text-[#eee1c9] hover:text-[#eee1c9] font-serif font-black text-[9.5px] rounded shadow-md cursor-pointer transition-all duration-300 flex items-center justify-center gap-1 uppercase border border-stone-800 active:translate-y-0.5 select-none"
+                  className="relative flex-1 py-2 bg-gradient-to-b from-[#2c1b11] to-[#150c07] hover:from-[#b03c24] hover:to-[#7d2512] text-[#e8d9bd] font-serif font-black text-[9.5px] uppercase tracking-wider rounded-[3px] border-2 border-[#0c0704] ring-1 ring-inset ring-[#e8d9bd]/15 shadow-[0_2px_0_#0a0503,0_3px_5px_rgba(0,0,0,0.4)] [text-shadow:0_1px_0_rgba(0,0,0,0.5)] cursor-pointer transition-all duration-200 hover:-translate-y-px active:translate-y-[2px] active:shadow-[0_0_0_#0a0503] flex items-center justify-center gap-1 select-none"
                 >
                   <span>{locale === 'zh' ? '✕ 撤销挂单' : '✕ Cancel Warrant'}</span>
                 </button>
-                
+
                 <button
                   onClick={() => onModifyDemand?.(task)}
-                  className="flex-1 py-1.5 bg-[#dfab6c] hover:bg-[#ebdcb9] text-[#1c110b] font-serif font-black text-[9.5px] rounded border border-[#dfab6c] transition cursor-pointer active:translate-y-0.5 select-none text-center"
+                  className="relative flex-1 py-2 bg-gradient-to-b from-[#e3d3ad] to-[#cdb88c] text-[#3a2415] font-serif font-black text-[9.5px] uppercase tracking-wider rounded-[3px] border-2 border-[#9c7d4f] ring-1 ring-inset ring-[#fff6e0]/40 shadow-[0_2px_0_#8a6c40,0_3px_5px_rgba(20,8,4,0.25)] cursor-pointer transition-all duration-200 hover:from-[#eaddbb] hover:to-[#d4c096] hover:-translate-y-px active:translate-y-[2px] active:shadow-[0_0_0_#8a6c40] flex items-center justify-center gap-1 select-none text-center"
                 >
                   <span>{locale === 'zh' ? '✎ 需求修改' : '✎ Modify Demand'}</span>
                 </button>
@@ -218,7 +213,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
               <button
                 onClick={() => onOpenDetail(task)}
-                className="w-full py-1 bg-transparent hover:bg-[#1c110b]/10 text-[#423126] font-mono text-[9px] uppercase tracking-wider font-bold rounded border border-[#423126]/30 transition"
+                className="w-full py-1.5 bg-transparent hover:bg-[#1c110b]/10 text-[#4a3526] font-mono text-[9px] uppercase tracking-[0.2em] font-bold rounded-[3px] border border-dashed border-[#52351f]/45 hover:border-[#52351f]/70 transition select-none"
               >
                 {locale === 'zh' ? '▎ 查看详情' : '▎ VIEW DETAILED WARRANT'}
               </button>
@@ -227,15 +222,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onMine(task)}
-                className="flex-1 py-1.5 bg-[#9e331b] hover:bg-[#b03d27] text-[#eee1c9] font-serif font-black text-[10px] rounded shadow-md cursor-pointer transition-all duration-300 flex items-center justify-center gap-1.5 uppercase border border-[#6e2211] active:translate-y-0.5 select-none"
+                className="group/cta relative flex-1 py-2 bg-gradient-to-b from-[#b03c24] to-[#7d2512] text-[#f4e4c1] font-serif font-black text-[10px] uppercase tracking-[0.12em] rounded-[3px] border-2 border-[#52180b] ring-1 ring-inset ring-[#f0c79a]/25 shadow-[0_2px_0_#3a1006,0_4px_7px_rgba(20,8,4,0.4)] [text-shadow:0_1px_0_rgba(0,0,0,0.45)] cursor-pointer transition-all duration-200 hover:from-[#c2462c] hover:to-[#8c2b15] hover:-translate-y-px hover:shadow-[0_3px_0_#3a1006,0_7px_11px_rgba(20,8,4,0.5)] active:translate-y-[2px] active:shadow-[0_0_0_#3a1006] flex items-center justify-center gap-1.5 select-none overflow-hidden"
               >
-                <Target className="w-3.5 h-3.5 text-[#eee1c9]" /> 
+                <span className="absolute inset-[3px] rounded-[2px] border border-dashed border-[#f0c79a]/25 pointer-events-none"></span>
+                <span className="text-[#f0c79a]/70 text-[8px]">★</span>
+                <Target className="w-3.5 h-3.5 text-[#f4e4c1]" />
                 <span>{t('btnMine')}</span>
+                <span className="text-[#f0c79a]/70 text-[8px]">★</span>
               </button>
-              
+
               <button
                 onClick={() => onValidate(task)}
-                className="px-3 py-1.5 bg-[#eae0cb] hover:bg-[#e1d5bd] text-[#5c493c] font-serif font-bold text-[10px] rounded border border-[#bfae94] transition cursor-pointer active:translate-y-0.5 select-none"
+                className="relative px-3 py-2 bg-gradient-to-b from-[#e3d3ad] to-[#cdb88c] text-[#3a2415] font-serif font-black text-[10px] uppercase tracking-wider rounded-[3px] border-2 border-[#9c7d4f] ring-1 ring-inset ring-[#fff6e0]/40 shadow-[0_2px_0_#8a6c40,0_3px_5px_rgba(20,8,4,0.25)] cursor-pointer transition-all duration-200 hover:from-[#eaddbb] hover:to-[#d4c096] hover:-translate-y-px active:translate-y-[2px] active:shadow-[0_0_0_#8a6c40] select-none"
               >
                 {t('btnValidate')}
               </button>
