@@ -1,6 +1,6 @@
 # Aurora Agent Flow Diagrams
 
-本文只画当前代码中已经实现的逻辑，不包含未来支付模块和未实现的人工 Miner 执行市场。
+本文只画当前代码中已经实现的逻辑。当前已实现平台自营 Dataset/Debug Agent、人工市场 Task Spec Agent、平台 Agent 注册接口、Sepolia txHash 支付验证；不包含人工 Miner 接单执行市场本身。
 
 代码入口：
 
@@ -8,6 +8,8 @@
 - `DatasetMinerGraph`: `aurora_agent_core/miners/dataset_miner_graph.py`
 - `DebugMinerGraph`: `aurora_agent_core/miners/debug_miner_graph.py`
 - `HumanMarketTaskSpecGraph`: `aurora_agent_core/agents/human_market_task_spec_graph.py`
+- `Payment Verification`: `aurora_agent_core/payment.py`
+- `Platform Agent Registry`: `aurora_agent_core/platform_agent_registry.py`
 
 ## 1. Platform Task Intake Agent
 
@@ -16,6 +18,7 @@
 ```text
 POST /v1/intake
 POST /v1/execute
+POST /v1/payment/verify
 ```
 
 真实 LangGraph 节点：
@@ -54,7 +57,7 @@ flowchart TD
 
     DRAFT --> MISS["missing_info_detector<br/>按 registry input_contract 查缺字段"]
     MISS -->|"缺字段"| NEED["needs_confirmation"]
-    MISS -->|"字段完整"| PRICE["price_estimator<br/>dataset/debug 分别估价"]
+    MISS -->|"字段完整"| PRICE["price_estimator<br/>dataset/debug 动态估价"]
 
     PRICE --> CONFIRM["confirmation_gate<br/>检查 price_confirmed / user_budget / 确认词"]
     CONFIRM -->|"未确认价格"| WAIT["awaiting_price_confirmation"]
@@ -63,11 +66,54 @@ flowchart TD
     SPEC --> READY["ready=true<br/>可进入 Router 和 Miner"]
 ```
 
+Debug 动态估价：
+
+```mermaid
+flowchart TD
+    DEBUG["draft_task.debug"] --> BASE["base = 0.005 ETH"]
+    DEBUG --> PATCH{"allow_patch?"}
+    DEBUG --> TEST{"有 test_command?"}
+    DEBUG --> SIZE["GitHub repo size<br/>GET api.github.com/repos/owner/repo"]
+
+    PATCH -->|"true"| PATCHFEE["+0.008"]
+    PATCH -->|"false"| PATCHZERO["+0"]
+    TEST -->|"true"| TESTFEE["+0.006"]
+    TEST -->|"false"| TESTZERO["+0"]
+
+    SIZE --> BUCKET{"size_kb bucket"}
+    BUCKET -->|"unknown"| UNKNOWN["+0.005"]
+    BUCKET -->|"<=1MB"| S1["+0.002"]
+    BUCKET -->|"<=10MB"| S10["+0.005"]
+    BUCKET -->|"<=50MB"| S50["+0.010"]
+    BUCKET -->|"<=200MB"| S200["+0.018"]
+    BUCKET -->|">200MB"| SBIG["+0.025"]
+
+    BASE --> SUM["sum components"]
+    PATCHFEE --> SUM
+    PATCHZERO --> SUM
+    TESTFEE --> SUM
+    TESTZERO --> SUM
+    UNKNOWN --> SUM
+    S1 --> SUM
+    S10 --> SUM
+    S50 --> SUM
+    S200 --> SUM
+    SBIG --> SUM
+
+    SUM --> CAP["suggested_price = min(sum, 0.05 ETH)"]
+```
+
 平台执行链路：
 
 ```mermaid
 flowchart TD
-    EXEC["POST /v1/execute"] --> INTAKE["TaskIntakeGraph.run"]
+    EXEC["POST /v1/execute"] --> PAYHASH{"payment_tx_hash provided<br/>and payment_verified=false?"}
+    PAYHASH -->|"yes"| PAYVERIFY["verify_payment_tx<br/>二次校验链上付款"]
+    PAYVERIFY --> PAYOK{"payment_verified?"}
+    PAYOK -->|"false"| BLOCK["HTTP 402<br/>不执行 miner"]
+    PAYOK -->|"true"| INTAKE["TaskIntakeGraph.run"]
+    PAYHASH -->|"no"| INTAKE
+
     INTAKE --> READY{"intake.ready?"}
     READY -->|"false"| STOP["返回 intake<br/>execution=null"]
     READY -->|"true"| ROUTER["route_task<br/>按 task_type 查 registry"]
@@ -294,6 +340,72 @@ flowchart TD
     OK -->|"no"| ERR["needs_confirmation"]
 ```
 
+## 5. Payment Verification Module
+
+对应接口：
+
+```text
+POST /v1/payment/verify
+```
+
+这不是 LangGraph agent，而是 Agent 后端的支付闸门。前端钱包付款后，把 `tx_hash` 发给这里；验证通过后才继续执行平台 Dataset/Debug Miner。
+
+```mermaid
+flowchart TD
+    REQ["tx_hash + expected_price + payer_address"] --> LOAD["PaymentConfig.from_env<br/>SEPOLIA_RPC_URL<br/>CONTRACT_ADDRESS<br/>chain_id=11155111"]
+    LOAD --> HASH["normalize_tx_hash<br/>0x + 32 bytes"]
+    HASH --> CHAIN["eth_chainId"]
+    CHAIN --> CHAINOK{"chainId == 11155111?"}
+    CHAINOK -->|"no"| FAIL["payment_verified=false"]
+    CHAINOK -->|"yes"| TX["eth_getTransactionByHash"]
+
+    TX --> TXOK{"tx exists?"}
+    TXOK -->|"no"| FAIL
+    TXOK -->|"yes"| RECEIPT["eth_getTransactionReceipt"]
+
+    RECEIPT --> RCPTOK{"receipt exists<br/>status == 1?"}
+    RCPTOK -->|"no"| FAIL
+    RCPTOK -->|"yes"| CHECKS["校验:<br/>tx.to == ComputeOutsourcePlatform<br/>tx.from == payer_address<br/>tx.value >= expected_price"]
+
+    CHECKS --> OK{"全部通过?"}
+    OK -->|"yes"| PASS["payment_verified=true<br/>返回 paid_amount/confirmations"]
+    OK -->|"no"| FAIL
+```
+
+前端推荐链路：
+
+```mermaid
+flowchart LR
+    A["/v1/intake<br/>拿 suggested_price"] --> B["钱包付款<br/>Sepolia tx"]
+    B --> C["/v1/payment/verify<br/>校验 txHash"]
+    C -->|"true"| D["/v1/execute<br/>带 payment_tx_hash 二次校验"]
+    C -->|"false"| E["提示用户付款失败/金额不足"]
+```
+
+## 6. Platform Agent Registry
+
+对应接口：
+
+```text
+POST /v1/platform-agents
+GET /v1/platform-agents
+GET /v1/platform-agents/{agent_id}
+```
+
+这不是 LangGraph agent，而是“新增平台 miner/agent”的注册入口。目前是内存存储，服务重启后会丢。
+
+```mermaid
+flowchart TD
+    CREATE["POST /v1/platform-agents"] --> VALID["Pydantic 校验:<br/>agent_name/company_name/api_url/input_schema/output_schema"]
+    VALID --> SLUG["slugify(company + agent)<br/>生成 agent_id"]
+    SLUG --> RECORD["生成 registry record:<br/>input_schema/output_schema<br/>routing.assigned_agent<br/>execution.invocation_url"]
+    RECORD --> STORE["内存 store"]
+    STORE --> RESP["返回 status=draft<br/>review_status=pending"]
+
+    LIST["GET /v1/platform-agents"] --> STORE
+    DETAIL["GET /v1/platform-agents/{agent_id}"] --> STORE
+```
+
 ## 对外讲法
 
 如果只讲三个核心模块，建议这样讲：
@@ -302,6 +414,7 @@ flowchart TD
 flowchart LR
     A["Platform Task Intake Agent<br/>平台自营任务规格化与报价"] --> B["Platform Miner Agents<br/>Dataset Miner / Debug Miner 自动执行"]
     C["Human Market Task Spec Agent<br/>人工市场任务条款与奖励规则 finalize"] --> D["Human Miner Market<br/>人工接单/Validator 审核/链上结算"]
+    E["Payment Verification<br/>Sepolia txHash 闸门"] --> B
 ```
 
 当前代码已实现：
@@ -311,5 +424,7 @@ Platform Task Intake Agent: 已实现
 Dataset Miner Agent: 已实现
 Debug Miner Agent: 已实现
 Human Market Task Spec Agent: 已实现
-Human Miner Market 执行和链上支付 verify: 待接入
+Payment Verification: 已实现
+Platform Agent Registry: 已实现
+Human Miner Market 接单执行和 Validator 市场页面: 不在 aurora-agent-core 内
 ```

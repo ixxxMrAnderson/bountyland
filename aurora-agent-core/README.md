@@ -2,9 +2,9 @@
 
 Aurora 是当前项目的独立 Python + LangGraph Agent Backend MVP，只放在根目录下的 `aurora-agent-core` 文件夹中，不修改现有 `apps`、`contracts`、`docs`、`packages` 等目录。
 
-组员接入和真实调用示例见 [docs/agent-usage-guide.zh.md](/Users/root1/Desktop/hackathon/bittenssor-pro/aurora-agent-core/docs/agent-usage-guide.zh.md)。
+组员接入和真实调用示例见 [docs/agent-usage-guide.zh.md](docs/agent-usage-guide.zh.md)。
 
-前端联调接口文档见 [docs/frontend-agent-api.zh.md](/Users/root1/Desktop/hackathon/bittenssor-pro/aurora-agent-core/docs/frontend-agent-api.zh.md)。
+前端联调接口文档见 [docs/frontend-agent-api.zh.md](docs/frontend-agent-api.zh.md)。
 
 它按照 `AGENT_ARCHITECTURE_PLAN_ZH.md` 落地为：
 
@@ -209,6 +209,8 @@ aurora-agent-core/
 
 ### Task Intake Graph
 
+![Platform Task Intake Pipeline](docs/diagrams/platform_taskspec.png)
+
 ```text
 START
   -> feasibility_check
@@ -222,6 +224,8 @@ START
 
 ### Dataset Miner Graph
 
+![Dataset Miner Pipeline](docs/diagrams/dataset_agent.png)
+
 ```text
 START
   -> dataset_planner
@@ -233,6 +237,8 @@ START
 ```
 
 ### Debug Miner Graph
+
+![Debug Miner Pipeline](docs/diagrams/debug_agent.png)
 
 ```text
 START
@@ -249,4 +255,17 @@ START
   -> END
 ```
 
-当前 Debug Miner 默认诊断、不改仓库；用户明确要求修复或保留修改后代码时，会开启 patch loop，输出 `patch.diff` 和 `workspace/repo` 修改后仓库。`use_llm=true` 时每轮 patch 都先调用 Z.ai 生成受限 patch plan，模型失败或拒绝时才用安全启发式兜底。完整论文映射设计见 [docs/vuldebugger-debug-agent-logic.zh.md](/Users/root1/Desktop/hackathon/bittenssor-pro/aurora-agent-core/docs/vuldebugger-debug-agent-logic.zh.md)。
+当前 Debug Miner 默认诊断、不改仓库；用户明确要求修复或保留修改后代码时，会开启 patch loop，输出 `patch.diff` 和 `workspace/repo` 修改后仓库。`use_llm=true` 时每轮 patch 都先调用 Z.ai 生成受限 patch plan，模型失败或拒绝时才用安全启发式兜底。完整论文映射设计见 [docs/vuldebugger-debug-agent-logic.zh.md](docs/vuldebugger-debug-agent-logic.zh.md)。
+
+### Human Market Task Spec Graph
+
+![Human Market Task Spec Pipeline](docs/diagrams/human_market_taskspec.png)
+
+```text
+START
+  -> draft_spec
+  -> validate_market_rule
+  -> confirmation_gate
+  -> normalize_response
+  -> END
+```

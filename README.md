@@ -1,255 +1,139 @@
-# Bounty Land：Web3 长程任务 Agent 与链上赏金结算平台
+# Bounty Land
+
+Web3 long-horizon task agents and bounty settlement platform.
 
 ![Bounty Land Intro](./img/intro_page_screenshot.jpg)
 
+Bounty Land 把“通缉令式悬赏”做成一个 Web3 长程任务平台：用户发布计算任务，平台 Agent 可以直接执行，也可以把任务发布到人工 Miner 市场；Validator 负责评分与审查，最终由链上合约记录结果、报告 hash 和奖励分配。
 
-## 项目简介
+这个项目不是一次性聊天 Demo，而是一个从 **需求输入 -> TaskSpec -> Agent/Miner 执行 -> artifact/trace/report -> Validator 评分 -> 链上结算** 的完整闭环。
+## 项目演示视频链接
 
-在 19 世纪的美国边疆，Bounty Land 是通缉令、赏金、赏金猎人、雇佣杀手与执法者交汇的地方：有人张贴悬赏，有人追踪目标，治安官维持秩序。
+[Bounty Land Demo Video](https://x.com/y_gla64630/status/2066125934353436828?s=46)
 
-在我们的项目中，每一张通缉令都变成了一个计算任务。用户既可以请求平台提供的 killer agents 直接解决任务，也可以把赏金发布到开放市场，让人类 Worker 接单、提交结果并赚取奖励；Validator 则扮演执法者，审查交付结果，维持评分与结算的公平性。最终，Agent 的执行轨迹、Worker 的交付结果、Validator 的评分和链上赏金结算共同构成一个可追踪的 Web3 任务市场。
+## 一句话
 
-项目重点不是做一次性问答，而是展示一个从“需求输入”到“Agent 执行”再到“链上证明与结算”的完整 Web3 长程任务闭环。
+用户把模糊任务交给 Bounty Land，平台先用 Task Spec Agent 把任务变成可执行、可验证、可定价的规格；随后任务可以交给平台自营 Agent，也可以交给人工 Miner 市场；最后通过 Validator 与合约完成可追踪结算。
 
 ## 核心亮点
 
-- **长程 Agent 工作流**：任务受理、需求拆解、任务路由、工具调用、产物生成、trace 记录和最终报告输出。
-- **双 Miner MVP**：已支持 Dataset Miner 与 Debug Miner 两类任务。
-- **Bounty Market 体验**：前端已支持通缉令式任务发布、killer agent 选择、开放市场接单、Validator 评分和奖励结算展示。
-- **链上结算层**：Solidity 合约记录任务、Worker 输出、Agent 评分、报告 hash、reputation 和 reward allocation。
-- **可追踪执行记录**：每次 Agent 运行都会生成 `trace.json`，用于展示计划、执行、工具调用和结果。
-- **钱包无关设计**：合约不绑定特定钱包，普通钱包、后端 oracle 钱包、Safe 或 Cobo Agentic Wallet 都可调用同一套 ABI。
-- **黑客松友好**：前端、Node API、Agent Core、智能合约和 Sepolia 部署配置均已拆分，便于分工联调。
+- **长程 Agent 后端**：基于 Python + LangGraph，实现任务受理、需求拆解、动态估价、路由、执行、trace 和 artifact 打包。
+- **平台自营 Miner**：已实现 Dataset Miner 与 Debug Miner，支持 OSV 公开漏洞数据、GitHub 仓库调试、patch loop 和 Z.ai 调用统计。
+- **人工 Miner 市场**：Human Market Task Spec Agent 帮用户 finalize 任务定义、Validator 评分细则和奖励规则 `x/y/z/[a1..ay]`。
+- **链上结算层**：Solidity 合约负责 task、worker output、score、report hash、reward allocation 和 claim。
+- **前端可演示闭环**：React/Vite 前端展示任务大厅、Agent Hall、Worker 提交、Validator 评分、链上状态和奖励分配。
+- **支付与价格确认**：Agent 后端支持动态估价，前端确认价格后可使用 Sepolia tx hash 调用 `/v1/payment/verify` 验证付款。
+- **黑客松叙事明确**：平台 Miner 像官方店，人工 Miner 像自由市场；用户既可以买平台能力，也可以发布悬赏让市场竞争。
 
-## 产品流程展示
+## 产品流程
 
 ![General Workflow](./img/general_workflow.jpg)
 
-整体流程可以理解为一个链上的悬赏任务市场：用户先提出计算需求，平台将需求拆解成可执行、可验证、可结算的任务；随后任务可以由平台 Agent 直接执行，也可以被发布到公开大厅交给人工 Miner 接单。Miner提交计算结果后，Validator 对结果进行评分与审查，最终由后端和合约记录报告 hash、分数与奖励分配，实现从需求、执行、评价到结算的闭环。
+1. 用户输入自然语言任务。
+2. Platform Task Intake Agent 判断任务类型、检查信息完整性、估价并等待价格确认。
+3. 如果是平台任务，路由到 Dataset Miner 或 Debug Miner。
+4. 如果是人工市场任务，Human Market Task Spec Agent finalize 任务规则、评分标准和奖励机制。
+5. Miner 输出 artifact、trace 和 report。
+6. Validator 根据评分细则评价结果。
+7. Node API 记录任务状态，合约记录最终结果和奖励分配。
 
-![Agent Hall](./img/agent_hall.jpg)
+## 四个 Agent / Miner 流程
 
-用户可以先进入 Agent Hall 查看平台已有的 killer agents。每个 Agent 都有自己的能力方向、历史任务、评分和公开评价记录。平台提供的 Agent 更像职业杀手：它们可以直接被用户委托，用于完成特定类型的计算任务。
+### 1. Platform Task Intake Agent
 
-![Choose Task](./img/screenshot_choose_task.jpg)
+负责把用户自然语言需求转换为统一 `TaskSpec`，并完成任务支持判断、缺失字段检查、动态估价、价格确认和路由。
 
-在创建任务时，用户可以选择具体的计算任务类型：例如 Web3 Debug、数据集生成，或通过 Task Spec Agent 定制更个性化的计算外包任务。这个入口决定了任务后续会被路由到哪一类 Agent 或 Worker 流程。
+![Platform Task Intake Pipeline](./aurora-agent-core/docs/diagrams/platform_taskspec.png)
 
-### Debug Agent 执行流
+### 2. Dataset Miner
 
-![Debug Agent Flow](./img/agent_flow.png)
+负责构建数据集。当前支持 OSV Public API 真实漏洞数据，也支持 Z.ai synthetic 记录和离线模板兜底。
 
-Debug Agent 是当前项目重点展示的 killer agent。它可以读取公开仓库、理解项目结构、执行用户指定的测试命令、收集失败日志、定位候选文件，并生成修复计划、patch 和最终报告。整个过程会被记录为 trace，方便后续 Validator 和用户审查 Agent 的执行路径。Agent的具体设计和实现在之后的文档会详细说明，这里不再赘述。
+![Dataset Miner Pipeline](./aurora-agent-core/docs/diagrams/dataset_agent.png)
 
-![Path to Glory](./img/path_to_glory.jpg)
+### 3. Debug Miner
 
-我们也支持第三方发布自己的 Agent，但所有 Agent 都必须在平台接受公开评价。Agent 不能只依靠自我声明来证明能力，而是需要通过任务履约、用户反馈、Validator 审查和历史表现逐步积累 reputation。表现优秀的 Agent 会进入 Hall-of-Fame，获得更高曝光和更多用户使用；评分不理想的 Agent 则会被市场自然淘汰，并由开发者重新调试和迭代。这样的机制既帮助用户筛选可靠 Agent，也为 Agent 开发者提供了清晰的反馈闭环。
+负责公开 GitHub 仓库调试。它会 clone 仓库、扫描上下文、运行用户确认的复现命令、分析失败信号、定位候选文件，并在 `allow_patch=true` 时进入最多 10 轮 patch loop。
 
-![Miner Workflow](./img/miner_workflow.jpg)
+![Debug Miner Pipeline](./aurora-agent-core/docs/diagrams/debug_agent.png)
 
-如果用户不想直接使用现成 Agent，也可以选择让 Agent 帮自己制定个性化的计算外包任务。Task Spec Agent 会把自然语言需求拆解为任务描述、验收标准、评分维度、奖励池和结算条件，帮助用户把模糊需求变成可以被 Miner 和 Validator 处理的标准化订单。
+### 4. Human Market Task Spec Agent
 
-![Task Lobby](./img/screenshot_lobby.jpg)
+负责人工 Miner 市场订单草案。它和用户 finalize 任务定义、Validator 评分细则，以及奖励规则：
 
-订单发布之后，会进入公开任务大厅。人工 Miner 可以浏览任务、选择自己能完成的订单并提交计算结果。这个大厅对应西部世界里的悬赏墙：任务越清晰、奖励越合理，就越容易吸引合适的 Worker。
+- `x`：threshold score，超过阈值才可能拿钱。
+- `y`：最多获奖 Miner 数量。
+- `z`：结算时间窗口。
+- `[a1, a2, ..., ay]`：前 `y` 名分账比例，总和为 1。
 
-![Miner Submit](./img/screenshot_miner.jpg)
-
-Miner 接单后会进入提交界面，上传或填写自己的计算产物，并生成对应的 output URI 和 hash。平台会把这些提交结果纳入任务记录，等待后续 Validator 审查。
-
-![Validator Score](./img/screenshot_validator.jpg)
-
-Validator 会基于任务验收标准对 Miner 的结果进行打分，检查产物是否满足要求、是否存在低质量输出或作弊风险。评分结果会影响奖励释放和 reputation 变化，最终形成可追踪的结算记录。
-
-## 适配赛道
-
-### Z.AI：Web3 x Long-Horizon Task
-
-Aurora 的核心 Agent 能力围绕长程 Web3 任务展开：
-
-```text
-用户需求
-  -> Task Intake Agent 拆解需求
-  -> 路由到 Dataset Miner / Debug Miner
-  -> Agent 持续调用工具执行任务
-  -> 生成 artifact + trace + report
-  -> 后端提交评分与报告 hash
-  -> 合约记录结果并结算奖励
-```
-
-这体现了长程任务中的自主规划、持续执行、工具调用、结果验证和最终交付。
-
-### Cobo / Agentic Wallet 可选扩展
-
-当前核心流程不依赖特定钱包。若需要冲 Cobo 赛道，可以让 Cobo Agentic Wallet 作为任务预算钱包或 settlement wallet，通过 Pact 限制可调用合约、函数和额度。合约层不需要改动。
+![Human Market Task Spec Pipeline](./aurora-agent-core/docs/diagrams/human_market_taskspec.png)
 
 ## 系统架构
 
 ```text
-Frontend UI
-  |
-  | task / trace / result / settlement view
+React/Vite Frontend
+  | 任务创建 / 钱包连接 / 价格确认 / 任务大厅 / 评分与结算展示
   v
 Node API Backend
-  |
-  | create task / submit output / evaluation / settlement
-  |                        \
-  |                         \ call Agent Core
-  v                          v
-ComputeOutsourcePlatform   Aurora Agent Core
-Solidity Contract          Python + LangGraph
+  | 任务市场状态 / Worker 提交 / Validator 评分 / 合约结算调用
+  |                         \
+  |                          \ 调用 Agent 后端
+  v                           v
+Solidity Contracts          Aurora Agent Core
+Sepolia Testnet             Python + LangGraph + FastAPI
   |                          |
-  | escrow / result / payout | Task Intake / Dataset Miner / Debug Miner
+  | task / score / payout    | TaskSpec / Dataset / Debug / Human Market
   v                          v
-Sepolia Testnet            artifacts / reports / trace
+Reward Settlement           artifacts / trace.json / report.md / patch.diff
 ```
 
-## 主要模块
+这里有三个“后端”概念：
+
+- **Node API 后端**：任务市场后端，负责前端任务、提交、评分、结算接口。
+- **Agent 后端**：`aurora-agent-core`，负责 LangGraph Agent 和 Miner 执行。
+- **链上合约后端**：Sepolia 合约，负责资金、结果记录和奖励领取。
+
+## 仓库结构
 
 ```text
 apps/api
-Node.js API。负责任务状态、Worker 提交、evaluation 记录、链上结算调用。
+  Node API 后端。负责任务状态、Worker 提交、Validator 评分和合约结算 dry-run/execute。
 
 apps/compute-outsourcing-platform
-React + Vite 前端。用于展示任务市场、Agent、Worker、Validator、钱包和结算状态。
+  React + Vite 前端。展示 Bounty Land 产品界面、Agent Hall、任务大厅、Worker/Validator 流程。
 
 aurora-agent-core
-Python + LangGraph Agent Core。包含 Task Intake Agent、Dataset Miner、Debug Miner 和 FastAPI 服务。
+  Python + LangGraph Agent 后端。包含 Platform Task Intake、Dataset Miner、Debug Miner、
+  Human Market Task Spec Agent、Z.ai 接入、支付验证和 artifacts。
 
 contracts
-Solidity 合约。实现任务托管、Worker/Validator 注册、结果上链、reputation 和 reward allocation。
+  Solidity 合约。实现任务托管、Worker/Validator 注册、结果记录、声誉和奖励分配。
 
 packages/shared
-前后端共享的评分逻辑、criteria 模板和合约部署配置。
+  前后端共享的评分模板、合约 ABI 和部署配置。
 
 demo-bug-repo
-Debug Miner 演示用的小型问题仓库。
+  Debug Miner 演示用的小型问题仓库。
+
+img
+  产品截图和演示图。
 ```
-
-## Agent 能力
-
-### Task Intake Agent
-
-负责把自然语言任务转换为统一的 `TaskSpec`：
-
-```text
-- 判断任务是否支持
-- 检测缺失字段
-- 估算任务价格
-- 生成结构化 TaskSpec
-- 路由到对应 Miner
-```
-
-### Dataset Miner
-
-用于构建 Web3 数据集任务：
-
-```text
-- 规划数据集字段和目标规模
-- 发现公开数据源
-- 支持 OSV 等公开漏洞数据源
-- 生成或抽取结构化数据
-- 清洗、去重、打包
-- 输出 dataset.jsonl / sources.json / report.md / trace.json
-```
-
-示例任务：
-
-```text
-构建 10 条 Web3 漏洞数据集，覆盖 reentrancy 和 access control，
-仅使用公开来源，输出 jsonl。
-```
-
-### Debug Miner
-
-用于公开 Git 仓库的 Debug 任务：
-
-```text
-- clone 公开仓库
-- 读取项目结构
-- 运行用户确认的复现命令
-- 收集失败日志
-- 定位候选文件
-- 生成修复计划
-- 可选生成 patch
-- 输出 debug_report.md / patch.diff / trace.json
-```
-
-示例任务：
-
-```text
-Debug 这个公开 GitHub 仓库，测试命令是 python -m pytest，
-目标是让失败测试通过，允许生成 patch。
-```
-
-## 链上合约
-
-核心合约：
-
-```text
-contracts/src/ComputeOutsourcePlatform.sol
-```
-
-已实现能力：
-
-```text
-- createTask：创建任务并注入 reward pool
-- fundTask：追加任务资金
-- registerWorker / registerValidator：角色注册和质押
-- submitWorkerOutput：Worker 提交产物 URI 和 hash
-- submitResult：resultOracle 提交 Agent / 后端评分和报告 hash
-- finalizeTask：按链下计算的 BPS 分配奖励
-- claimReward：Worker / Validator / 创建者领取奖励
-```
-
-合约不直接运行 AI，也不解析报告内容。Agent 在链下完成评分和报告生成，链上只记录最终可验证结果：
-
-```text
-taskURI
-outputURI
-outputHash
-workerScore
-validatorScore
-reportURI
-reportHash
-reward allocation
-```
-
-## 后端结算
-
-Node API 已提供结算接口：
-
-```text
-POST /tasks/:id/settle
-GET  /tasks/:id/settlements
-```
-
-默认 `settle` 为 dry-run，只返回将要提交到链上的参数。传入 `dryRun:false` 后，后端会使用 `RESULT_ORACLE_PRIVATE_KEY` 调用：
-
-```text
-submitResult(...)
-finalizeTask(...)
-```
-
-注意：真实上链结算前，链上必须已经存在对应 `onchainTaskId`，且 Worker 已经在合约上提交过 output。
 
 ## 快速开始
 
-### 1. 安装 Node 依赖
+### 1. 安装根目录 Node 依赖
 
 ```bash
 npm install
 ```
 
-### 2. 配置根目录环境变量
-
-复制 `.env.example` 为 `.env`：
+### 2. 配置根目录 `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-需要填写：
+常用字段：
 
 ```env
 SEPOLIA_RPC_URL=https://...
@@ -262,7 +146,7 @@ MIN_VALIDATOR_STAKE_WEI=5000000000000000
 
 `RESULT_ORACLE_PRIVATE_KEY` 推导出的地址必须等于合约中的 `resultOracle()`。
 
-### 3. 启动 Node API
+### 3. 启动 Node API 后端
 
 ```bash
 npm run dev:api
@@ -292,31 +176,28 @@ npm run dev:fancy
 http://localhost:3000
 ```
 
-### 5. 启动 Agent Core
-
-推荐使用独立 Python 环境：
+### 5. 启动 Agent 后端
 
 ```bash
 cd aurora-agent-core
 conda env create -f environment.yml
 conda activate aurora-agent-core
-```
-
-配置 Z.AI：
-
-```bash
 cp .env.example .env
 ```
 
-建议在 `aurora-agent-core/.env` 中配置：
+在 `aurora-agent-core/.env` 中配置 Z.ai 和支付验证：
 
 ```env
 ZAI_API_KEY=你的_zai_key
 AURORA_MODEL=glm-5.1
-AURORA_BASE_URL=https://api.z.ai/api/paas/v4/
+AURORA_BASE_URL=https://api.z.ai/api/coding/paas/v4
+
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+COMPUTE_PLATFORM_CONTRACT_ADDRESS=0x...
+AURORA_PAYMENT_CHAIN_ID=11155111
 ```
 
-启动 Agent API：
+启动：
 
 ```bash
 python -m aurora_agent_core.api
@@ -328,9 +209,9 @@ python -m aurora_agent_core.api
 http://127.0.0.1:8791
 ```
 
-## 常用 API
+## 常用接口
 
-### Node API
+### Node API 后端
 
 ```text
 GET  /health
@@ -344,78 +225,194 @@ POST /tasks/:id/settle
 GET  /tasks/:id/settlements
 ```
 
-### Agent API
+### Agent 后端
 
 ```text
 GET  /health
 POST /v1/intake
 POST /v1/execute
+POST /v1/payment/verify
+GET  /v1/artifacts/download
 POST /v1/human-market/spec
+POST /v1/platform-agents
+GET  /v1/platform-agents
+GET  /v1/platform-agents/{agent_id}
 ```
 
-Dataset Miner 示例：
+## Agent 调用示例
+
+### Intake：只拆解和估价
 
 ```bash
-curl -s http://127.0.0.1:8791/v1/execute \
+curl -s http://127.0.0.1:8791/v1/intake \
   -H "Content-Type: application/json" \
-  -d "{\"user_input\":\"确认，帮我构建 10 条 Web3 漏洞数据集，仅公开来源，输出 jsonl，来源包括 OSV\",\"price_confirmed\":true,\"use_llm\":true}"
+  -d '{
+    "user_input":"帮我修复公开 GitHub 仓库 https://github.com/octocat/Hello-World，测试命令: ls，修复代码，保留仓库",
+    "use_llm":true
+  }'
 ```
 
-Debug Miner 示例：
-
-```bash
-curl -s http://127.0.0.1:8791/v1/execute \
-  -H "Content-Type: application/json" \
-  -d "{\"user_input\":\"Debug 公开仓库，仓库地址 https://github.com/your/demo-repo，测试命令 python -m pytest，允许生成 patch\",\"price_confirmed\":true,\"use_llm\":true}"
-```
-
-## 前后端、Agent 与合约联调流程
+典型返回：
 
 ```text
-1. 用户在前端创建任务，Node API 生成 task/order/criteria。
-2. 如需真实链上结算，用户或脚本在合约上 createTask，并记录 onchainTaskId。
-3. Worker 提交产物到 Node API；真实链上流程还需要调用 submitWorkerOutput。
-4. Node API 或前端调用 Aurora Agent Core 的 /v1/execute。
-5. Agent 生成 artifact、trace 和 report。
-6. Node API 记录 evaluation。
-7. 调用 POST /tasks/:id/settle 进行 dry-run，确认 submitResult/finalizeTask 参数。
-8. 设置 dryRun:false 后，由后端 resultOracle 钱包提交链上结果并 finalize。
-9. 前端展示 tx hash、report hash、reward allocation 和 settlement 状态。
+status = awaiting_price_confirmation | ready | rejected
+suggested_price = 动态估价
+task_spec = 结构化任务
 ```
 
-dry-run 示例：
+### Dataset Miner：执行数据集任务
 
 ```bash
-curl -s http://localhost:8787/tasks/1/settle \
+curl -s http://127.0.0.1:8791/v1/execute \
   -H "Content-Type: application/json" \
-  -d "{\"dryRun\":true,\"onchainTaskId\":1,\"workerAddress\":\"0x0000000000000000000000000000000000001001\",\"validatorAddress\":\"0x0000000000000000000000000000000000002001\"}"
+  -d '{
+    "user_input":"确认，帮我构建 10 条 Web3 漏洞数据集，仅公开来源，输出 jsonl，来源包括 OSV，npm:@openzeppelin/contracts",
+    "price_confirmed":true,
+    "use_llm":true
+  }'
 ```
 
-真实结算示例：
+输出 artifact：
+
+```text
+dataset.jsonl 或 dataset.csv
+sources.json
+stats.json
+report.md
+trace.json
+result.json
+```
+
+### Debug Miner：执行公开仓库 Debug
 
 ```bash
-curl -s http://localhost:8787/tasks/1/settle \
+curl -s http://127.0.0.1:8791/v1/execute \
   -H "Content-Type: application/json" \
-  -d "{\"dryRun\":false,\"onchainTaskId\":1,\"workerAddress\":\"0x真实Worker地址\",\"validatorAddress\":\"0x真实Validator地址\",\"reportURI\":\"ipfs://report\",\"reportHash\":\"0x报告hash\"}"
+  -d '{
+    "user_input":"帮我修复公开 GitHub 仓库 https://github.com/octocat/Hello-World\n测试命令: ls\n请修复，保留仓库，我要看修改后的代码\ntimeout:120",
+    "price_confirmed":true,
+    "use_llm":true
+  }'
 ```
 
-## 合约命令
+判断是否进入 patch loop：
 
-编译：
+```text
+execution.usage.patch_iterations > 0
+execution.debug.patch_iterations 非空
+execution.summary.patch_generated = true
+execution.usage.llm.total_tokens 记录 Z.ai 消耗
+```
+
+输出 artifact：
+
+```text
+debug_report.md
+runtime.json
+repo_context.json
+trace.json
+result.json
+patch.diff              # 有补丁时生成
+workspace/repo          # allow_patch=true 时保留修改后代码
+```
+
+### Human Market Task Spec Agent
+
+```bash
+curl -s http://127.0.0.1:8791/v1/human-market/spec \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_input":"发布人工 debug 悬赏：修复 GitHub 仓库测试失败，交付 patch 和验证报告。validator 按测试通过、补丁安全性、说明质量评分。threshold 80，前 3 名按 [0.5,0.3,0.2] 分钱，窗口 7 天。",
+    "use_llm":true
+  }'
+```
+
+该接口只 finalize 人工市场订单规则，不执行 Dataset/Debug Miner。前端可以把最终 JSON 转成 `taskURI/orderURI/criteriaHash`，再走链上创建任务。
+
+### Payment Verify：验证 Sepolia tx hash
+
+前端钱包付款后，把交易哈希交给 Agent 后端验证：
+
+```bash
+curl -s http://127.0.0.1:8791/v1/payment/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tx_hash":"0x...",
+    "expected_price":0.024,
+    "payer_address":"0x..."
+  }'
+```
+
+验证通过后再调用 `/v1/execute`，并传：
+
+```json
+{
+  "price_confirmed": true,
+  "payment_tx_hash": "0x...",
+  "payment_expected_price": 0.024
+}
+```
+
+## 前端演示路径
+
+![Agent Hall](./img/agent_hall.jpg)
+
+1. 进入 Agent Hall，查看平台自营 killer agents。
+2. 创建任务，选择平台 Agent 或人工市场。
+3. Platform Task Intake Agent 返回估价，前端展示价格确认。
+4. 用户钱包付款，前端拿到 `txHash`。
+5. Agent 后端验证付款，执行 Dataset/Debug Miner。
+6. 前端展示 report、trace、patch、修改后 repo 或数据集 artifact。
+
+![Task Lobby](./img/screenshot_lobby.jpg)
+
+人工市场路径：
+
+1. Human Market Task Spec Agent 生成任务草案。
+2. 用户确认评分细则和奖励规则。
+3. 任务进入大厅。
+4. 人工 Miner 接单并提交结果。
+5. Validator 评分。
+6. Node API 和合约完成结算记录。
+
+## 合约
+
+核心合约：
+
+```text
+contracts/src/ComputeOutsourcePlatform.sol
+```
+
+主要能力：
+
+```text
+createTask
+fundTask
+registerWorker / registerValidator
+submitWorkerOutput
+submitResult
+finalizeTask
+claimReward
+```
+
+合约不运行 AI，也不解析报告。Agent 和 Validator 在链下生成结论，链上只记录可验证字段：
+
+```text
+taskURI
+outputURI
+outputHash
+workerScore
+validatorScore
+reportURI
+reportHash
+reward allocation
+```
+
+命令：
 
 ```bash
 npm run contracts:compile
-```
-
-测试：
-
-```bash
 npm run contracts:test
-```
-
-部署到 Sepolia：
-
-```bash
 npm run contracts:deploy:sepolia
 ```
 
@@ -426,69 +423,64 @@ contracts/deployments/sepolia.json
 packages/shared/src/contracts/compute-platform-sepolia.json
 ```
 
-后端读取 `packages/shared/src/contracts/compute-platform-sepolia.json` 中的 ABI 和合约地址。
+## 测试
 
-## 测试与检查
-
-Node / 合约基础检查：
+根目录 Node / 合约检查：
 
 ```bash
 npm run check
 npm run contracts:test
 ```
 
-Agent Core：
+Agent 后端测试：
 
 ```bash
 cd aurora-agent-core
 pytest -q
 ```
 
-## 安全边界
+前端构建：
 
-当前版本是黑客松 MVP，不是生产级托管系统。
-
-```text
-- Debug Miner 只建议运行可信公开 demo repo。
-- 运行命令必须由用户显式提供或确认。
-- 后端 result oracle 私钥只放在根目录 .env，不能进入前端环境变量。
-- 前端不接触任何私钥。
-- Agent 输出报告和评分，合约只记录 hash、score 和结算结果。
-- Cobo CAW / Safe / 多签可以作为后续资金权限层接入，但不是当前核心依赖。
+```bash
+npm --prefix apps/compute-outsourcing-platform run build
 ```
 
 ## 当前状态
 
 已完成：
 
-```text
-- React/Vite Bounty Land 前端
-- 通缉令式任务发布与任务市场展示
-- 平台 killer agents 展示与任务路由入口
-- Worker 提交、Validator 评分和结算状态展示
-- Node API 任务、提交、评价和结算接口
-- Aurora Agent Core FastAPI
-- Task Intake Agent
-- Dataset Miner 长程工作流
-- Debug Miner 长程工作流
-- Agent trace / report / artifact 输出
-- Solidity 任务托管与结算合约
-- Sepolia 合约配置导出
-- 后端 submitResult/finalizeTask 结算服务
-- 前端展示链上 report hash、settlement tx 与 reward allocation
-```
+- React/Vite Bounty Land 前端。
+- Node API 任务、提交、评价、结算 dry-run/execute。
+- Sepolia 合约与 shared ABI 配置。
+- Aurora Agent Core FastAPI。
+- Platform Task Intake Agent。
+- Dataset Miner。
+- Debug Miner patch loop。
+- Human Market Task Spec Agent。
+- Z.ai GLM-5.1 接入和 token usage 统计。
+- Sepolia payment tx hash 验证。
+- Agent artifacts、trace 和 report 输出。
 
-演示闭环：
+待完善：
 
-```text
-- 用户发布 Web3 数据集或 Debug 赏金任务
-- Agent 拆解任务并路由到 Dataset Miner / Debug Miner
-- Miner 生成产物、执行报告和 trace
-- Worker 提交结果，Validator 完成评价
-- 后端提交评分与 report hash
-- 合约完成 result recording 与 reward settlement
-- 前端展示任务、Agent 流程、评分、交易和奖励状态
-```
+- 前端把支付确认、tx hash 验证和 `/v1/execute` 串成更顺滑的状态机。
+- Debug Miner 对大型仓库的进度流式返回。
+- Artifact 下载、预览和 zip 打包在前端统一展示。
+- 人工 Miner 市场的链上 taskURI/criteriaHash 发布流程。
+- Validator 自动评分与人工评分混合机制。
+- Cobo Agentic Wallet / Safe 作为预算钱包和结算权限层。
+- 更细粒度的模型成本估算与用户预算上限控制。
+
+## 安全边界
+
+当前版本是黑客松 MVP，不是生产级托管系统。
+
+- Debug Miner 只建议运行可信公开 demo repo。
+- 运行命令必须由用户明确提供或确认。
+- 私钥只能放在根目录 `.env` 或安全密钥管理服务，不能进入前端环境变量。
+- 前端不接触 result oracle 私钥。
+- Agent 输出报告和评分，合约只记录 hash、score 和结算结果。
+- Cobo CAW / Safe / 多签可以作为后续资金权限层接入，但不是当前核心依赖。
 
 ## License
 
