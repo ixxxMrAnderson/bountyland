@@ -1366,19 +1366,19 @@ export default function App() {
       {/* Main Container Layout */}
       <div className="flex-1 min-h-0 flex max-w-[1440px] w-full mx-auto relative divide-x divide-amber-950/20">
         
-        {/* ================= LEFT SIDEBAR PANEL (collapsed icon-rail, expands on hover) ================= */}
-        {/* Spacer reserves layout space at the collapsed rail width so content never shifts */}
-        <div className="hidden md:block w-20 shrink-0" aria-hidden="true" />
+        {/* ================= LEFT SIDEBAR PANEL (always expanded) ================= */}
+        {/* Spacer reserves layout space at the expanded rail width so content never shifts */}
+        <div className="hidden md:block w-72 lg:w-80 shrink-0" aria-hidden="true" />
 
-        <div className="group/sidebar hidden md:flex absolute inset-y-0 left-0 z-40 w-20 hover:w-72 lg:hover:w-80 flex-col justify-between py-6 px-3.5 bg-[#0f0a08] gap-6 border-r border-[#4a3427]/40 overflow-hidden transition-[width] duration-300 ease-out shadow-xl shadow-black/40 hover:shadow-2xl hover:shadow-black/70">
-          
+        <div className="hidden md:flex absolute inset-y-0 left-0 z-40 w-72 lg:w-80 flex-col justify-between py-6 px-3.5 bg-[#0f0a08] gap-6 border-r border-[#4a3427]/40 overflow-hidden shadow-2xl shadow-black/70">
+
           <div className="flex flex-col gap-6">
             {/* Logo and Brand Title (Sheriff Badge Style) */}
-            <div className="flex items-center gap-3 justify-center group-hover/sidebar:justify-start p-1.5 group-hover/sidebar:p-3 rounded-lg border border-transparent group-hover/sidebar:bg-[#150f0c] group-hover/sidebar:border-[#4a3427] transition-all">
+            <div className="flex items-center gap-3 justify-start p-3 rounded-lg border bg-[#150f0c] border-[#4a3427] transition-all">
               <div className="w-10 h-10 shrink-0 rounded-full bg-[#1c1310] border-2 border-[#dfab6c] flex items-center justify-center shadow-lg shadow-black/30">
                 <Scale className="w-5 h-5 text-[#dfab6c] animate-pulse" />
               </div>
-              <div className="flex-col min-w-0 hidden group-hover/sidebar:flex">
+              <div className="flex-col min-w-0 flex">
                 <span className="font-serif font-black text-xs tracking-wider text-[#dfab6c] uppercase whitespace-nowrap">{t('appName')}</span>
                 <span className="font-mono text-[8px] text-[#8e5c3c] uppercase tracking-widest font-bold mt-0.5 whitespace-nowrap">{t('appSubName')}</span>
               </div>
@@ -1389,71 +1389,71 @@ export default function App() {
               <button
                 onClick={() => setActiveTab('DefineNewTask')}
                 title={t('navDefineNewTask')}
-                className={`flex items-center justify-center group-hover/sidebar:justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
+                className={`flex items-center justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
                   activeTab === 'DefineNewTask'
                     ? 'bg-[#1c1310] text-[#dfab6c] border-[#8e5c3c]/80 shadow-md'
                     : 'text-[#8c745d] border-transparent hover:text-[#ebdcb9] hover:bg-[#150f0c]'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Sparkles className={`w-4 h-4 shrink-0 transition ${activeTab === 'DefineNewTask' ? 'text-[#dfab6c]' : 'text-[#8e5c3c] group-hover:text-[#dfab6c]'}`} />
-                  <span className="hidden group-hover/sidebar:inline whitespace-nowrap">{t('navDefineNewTask')}</span>
+                  <Sparkles className={`w-4 h-4 shrink-0 transition ${activeTab === 'DefineNewTask' ? 'text-[#dfab6c]' : 'text-[#dfab6c]'}`} />
+                  <span className="inline whitespace-nowrap">{t('navDefineNewTask')}</span>
                 </div>
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 hidden group-hover/sidebar:block transition ${activeTab === 'DefineNewTask' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#4a3427] group-hover:text-[#8e5c3c]'}`} />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 block transition ${activeTab === 'DefineNewTask' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#8e5c3c]'}`} />
               </button>
 
               <button
                 onClick={() => setActiveTab('ActiveTasks')}
                 title={t('navMarketplace')}
-                className={`flex items-center justify-center group-hover/sidebar:justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
+                className={`flex items-center justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
                   activeTab === 'ActiveTasks'
                     ? 'bg-[#1c1310] text-[#dfab6c] border-[#8e5c3c]/80 shadow-md'
                     : 'text-[#8c745d] border-transparent hover:text-[#ebdcb9] hover:bg-[#150f0c]'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <ListTodo className={`w-4 h-4 shrink-0 transition ${activeTab === 'ActiveTasks' ? 'text-[#dfab6c]' : 'text-[#8e5c3c] group-hover:text-[#dfab6c]'}`} />
-                  <span className="hidden group-hover/sidebar:inline whitespace-nowrap">{t('navMarketplace')}</span>
+                  <ListTodo className={`w-4 h-4 shrink-0 transition ${activeTab === 'ActiveTasks' ? 'text-[#dfab6c]' : 'text-[#dfab6c]'}`} />
+                  <span className="inline whitespace-nowrap">{t('navMarketplace')}</span>
                 </div>
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 hidden group-hover/sidebar:block transition ${activeTab === 'ActiveTasks' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#4a3427] group-hover:text-[#8e5c3c]'}`} />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 block transition ${activeTab === 'ActiveTasks' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#8e5c3c]'}`} />
               </button>
 
               <button
                 onClick={() => setActiveTab('Activities')}
                 title={t('navNavRegistry')}
-                className={`flex items-center justify-center group-hover/sidebar:justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
+                className={`flex items-center justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
                   activeTab === 'Activities'
                     ? 'bg-[#1c1310] text-[#dfab6c] border-[#8e5c3c]/80 shadow-md'
                     : 'text-[#8c745d] border-transparent hover:text-[#ebdcb9] hover:bg-[#150f0c]'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Coins className={`w-4 h-4 shrink-0 transition ${activeTab === 'Activities' ? 'text-[#dfab6c]' : 'text-[#8e5c3c] group-hover:text-[#dfab6c]'}`} />
-                  <span className="hidden group-hover/sidebar:inline whitespace-nowrap">{t('navNavRegistry')}</span>
+                  <Coins className={`w-4 h-4 shrink-0 transition ${activeTab === 'Activities' ? 'text-[#dfab6c]' : 'text-[#dfab6c]'}`} />
+                  <span className="inline whitespace-nowrap">{t('navNavRegistry')}</span>
                 </div>
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 hidden group-hover/sidebar:block transition ${activeTab === 'Activities' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#4a3427] group-hover:text-[#8e5c3c]'}`} />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 block transition ${activeTab === 'Activities' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#8e5c3c]'}`} />
               </button>
 
               <button
                 onClick={() => setActiveTab('PlatformAgents')}
                 title={locale === 'zh' ? '杀手 Agent 名人堂' : 'Hall of Killer Agents'}
-                className={`flex items-center justify-center group-hover/sidebar:justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
+                className={`flex items-center justify-between px-3.5 py-3 rounded text-[11px] font-mono tracking-wider transition group border ${
                   activeTab === 'PlatformAgents'
                     ? 'bg-[#1c1310] text-[#dfab6c] border-[#8e5c3c]/80 shadow-md'
                     : 'text-[#8c745d] border-transparent hover:text-[#ebdcb9] hover:bg-[#150f0c] font-bold'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Bot className={`w-4 h-4 shrink-0 transition ${activeTab === 'PlatformAgents' ? 'text-[#dfab6c]' : 'text-[#8e5c3c] group-hover:text-[#dfab6c]'}`} />
-                  <span className="hidden group-hover/sidebar:inline whitespace-nowrap">{locale === 'zh' ? '杀手 Agent 名人堂' : 'Hall of Killer Agents'}</span>
+                  <Bot className={`w-4 h-4 shrink-0 transition ${activeTab === 'PlatformAgents' ? 'text-[#dfab6c]' : 'text-[#dfab6c]'}`} />
+                  <span className="inline whitespace-nowrap">{locale === 'zh' ? '杀手 Agent 名人堂' : 'Hall of Killer Agents'}</span>
                 </div>
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 hidden group-hover/sidebar:block transition ${activeTab === 'PlatformAgents' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#4a3427] group-hover:text-[#8e5c3c]'}`} />
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 block transition ${activeTab === 'PlatformAgents' ? 'translate-x-0.5 text-[#dfab6c]' : 'text-[#8e5c3c]'}`} />
               </button>
             </nav>
           </div>
 
-          {/* Collapsed rail mini-indicators — node count + wallet status (hidden once expanded) */}
-          <div className="flex group-hover/sidebar:hidden flex-col items-center gap-4">
+          {/* Collapsed rail mini-indicators (hidden when expanded) */}
+          <div className="hidden flex-col items-center gap-4">
             <NetworkStatsWidget compact />
             <div
               className="flex flex-col items-center gap-1 select-none"
@@ -1473,13 +1473,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Platform Performance Stats Dashboard — revealed when expanded */}
-          <div className="hidden group-hover/sidebar:flex flex-col gap-1 leading-none">
+          {/* Platform Performance Stats Dashboard — always visible */}
+          <div className="flex flex-col gap-1 leading-none">
             <NetworkStatsWidget />
           </div>
 
-          {/* Embedded MetaMask wallet widget — revealed when expanded */}
-          <div className="hidden group-hover/sidebar:flex flex-col gap-4">
+          {/* Embedded MetaMask wallet widget — always visible */}
+          <div className="flex flex-col gap-4">
             <CoboWalletWidget
               walletState={wallet}
               onApproveItem={handleApproveWalletItem}
